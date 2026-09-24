@@ -8,9 +8,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>중간고사 직보 맞춤형 초정밀 마스터 대시보드</title>
   
-  <!-- Pretendard Font & QR Code Lib & Confetti -->
+  <!-- Pretendard Font & Confetti -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <style>
@@ -566,16 +565,7 @@
       cursor: pointer;
     }
 
-    #qrcode-canvas {
-      margin: 10px auto;
-      display: flex;
-      justify-content: center;
-      padding: 10px;
-      background: #ffffff;
-      border-radius: 10px;
-    }
-
-    /* Responsive Queries */
+    /* Responsive Queries & Mobile Precision Layout */
     @media (max-width: 820px) {
       .views-wrapper.mode-dual {
         grid-template-columns: 1fr !important;
@@ -590,14 +580,229 @@
     }
 
     @media (max-width: 600px) {
-      body { padding: 8px 6px; }
-      h1 { font-size: 1.25rem; }
-      .task-item { padding: 9px 10px; gap: 8px; }
-      .time-slot { width: 100%; margin-bottom: 2px; }
-      .day-card .task-item { flex-direction: column; gap: 4px; }
-      .day-card .task-item.has-cb { flex-direction: row; align-items: flex-start; }
-      .top-bar-sticky { padding: 10px 12px; }
-      .progress-header { font-size: 0.88rem; }
+      body {
+        padding: 6px 6px 20px 6px;
+      }
+      .container {
+        gap: 10px;
+      }
+      
+      /* Sticky Top Bar on Mobile */
+      .top-bar-sticky {
+        top: 2px;
+        padding: 8px 10px;
+        gap: 6px;
+      }
+      .progress-header {
+        font-size: 0.82rem;
+      }
+      .progress-bar-bg {
+        height: 10px;
+      }
+      .sticky-actions {
+        padding-top: 4px;
+        gap: 6px;
+        flex-wrap: nowrap;
+      }
+      .sync-status-indicator {
+        max-width: 140px;
+        font-size: 0.72rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .tool-btn-group {
+        gap: 4px;
+        flex-shrink: 0;
+      }
+      .tool-btn {
+        padding: 4px 7px;
+        font-size: 0.72rem;
+        white-space: nowrap;
+      }
+
+      /* Main Header on Mobile */
+      header {
+        padding: 12px 10px;
+      }
+      h1 {
+        font-size: 1.15rem;
+        line-height: 1.35;
+        word-break: keep-all;
+      }
+      header p {
+        font-size: 0.74rem;
+        line-height: 1.4;
+        word-break: keep-all;
+      }
+
+      /* Tab Nav on Mobile */
+      .tab-nav {
+        padding: 3px;
+        gap: 3px;
+      }
+      .tab-btn {
+        padding: 8px 4px;
+        font-size: 0.82rem;
+      }
+
+      /* Subject View on Mobile */
+      .subject-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .subject-card {
+        padding: 12px;
+      }
+      .subj-name {
+        font-size: 1.02rem;
+      }
+      .subj-exam-day {
+        font-size: 0.72rem;
+        padding: 2px 6px;
+      }
+
+      /* Daily Timetable Cards on Mobile (100% Ratio & Overflow Fix) */
+      .day-card {
+        padding: 12px;
+      }
+      .day-header {
+        padding-bottom: 8px;
+        margin-bottom: 8px;
+        gap: 4px;
+      }
+      .day-title {
+        font-size: 0.95rem;
+      }
+      .day-study-time {
+        font-size: 0.72rem;
+        padding: 2px 7px;
+      }
+      .day-progress-wrap {
+        padding: 4px 8px;
+        font-size: 0.72rem;
+        margin-bottom: 8px;
+      }
+
+      /* Daily Task Item with Checkbox */
+      .day-card .task-item.has-cb {
+        display: grid;
+        grid-template-columns: 22px 1fr;
+        column-gap: 10px;
+        row-gap: 3px;
+        align-items: start;
+        padding: 10px 10px;
+      }
+      .day-card .task-item.has-cb > input[type="checkbox"] {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        margin-top: 3px;
+        width: 20px;
+        height: 20px;
+      }
+      .day-card .task-item.has-cb > .time-slot {
+        grid-column: 2;
+        grid-row: 1;
+        width: auto !important;
+        max-width: fit-content;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: var(--text-muted);
+        background: var(--border);
+        padding: 1px 7px;
+        border-radius: 4px;
+        display: inline-block;
+        margin: 0;
+      }
+      .day-card .task-item.has-cb > .task-content {
+        grid-column: 2;
+        grid-row: 2;
+        width: 100%;
+        min-width: 0;
+      }
+
+      /* Daily Task Item without Checkbox */
+      .day-card .task-item:not(.has-cb) {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+        padding: 10px 10px;
+      }
+      .day-card .task-item:not(.has-cb) > .time-slot {
+        width: auto !important;
+        max-width: fit-content;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: var(--text-muted);
+        background: var(--border);
+        padding: 1px 7px;
+        border-radius: 4px;
+        display: inline-block;
+        margin: 0;
+      }
+      .day-card .task-item:not(.has-cb) > .task-content {
+        width: 100%;
+        min-width: 0;
+      }
+
+      /* Subject Card Task Item */
+      .subject-card .task-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 9px 10px;
+      }
+      .subject-card .task-item input[type="checkbox"] {
+        margin-top: 2px;
+        flex-shrink: 0;
+      }
+      .subject-card .task-content {
+        min-width: 0;
+        flex: 1;
+      }
+
+      /* General Task Typography */
+      .task-title {
+        font-size: 0.85rem;
+        line-height: 1.38;
+        word-break: keep-all;
+      }
+      .task-desc {
+        font-size: 0.74rem;
+        line-height: 1.35;
+        word-break: keep-all;
+      }
+      .tag {
+        font-size: 0.68rem;
+        padding: 1px 5px;
+        margin-right: 4px;
+      }
+
+      /* Modal on Mobile */
+      .modal-card {
+        width: calc(100% - 24px);
+        max-width: 440px;
+        padding: 18px 16px;
+      }
+      .modal-title {
+        font-size: 1.02rem;
+      }
+      .sync-input-row {
+        gap: 6px;
+      }
+      .sync-input {
+        padding: 8px 10px;
+        font-size: 0.88rem;
+      }
+      .btn-primary {
+        padding: 8px 12px;
+        font-size: 0.84rem;
+      }
+      .btn-secondary {
+        padding: 8px 10px;
+        font-size: 0.82rem;
+      }
     }
   </style>
 </head>
@@ -1424,16 +1629,9 @@
       <button class="btn-secondary" style="flex:1;" onclick="pullFromCloud(true)">📥 클라우드에서 가져오기</button>
     </div>
 
-    <!-- QR Code Scan Instant Sharing -->
-    <div style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; align-items: center;">
-      <span style="font-size: 0.82rem; font-weight: 800;">📷 QR 코드로 다른 기기에서 즉시 열기</span>
-      <div id="qrcode-canvas"></div>
-      <span style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">
-        폰이나 패드의 기본 카메라로 QR을 스캔하면 현재 상태 그대로 즉시 열립니다!
-      </span>
-      <button class="tool-btn" style="width: 100%; justify-content: center; padding: 8px;" onclick="copyShareLink()">
-        📋 현재 상태 동기화 링크 복사
-      </button>
+    <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.45;">
+      💡 <strong>기기 간 실시간 연동 팁:</strong><br>
+      다른 기기(폰 또는 아이패드)에서도 동일한 코드를 입력하고 [코드 연결]을 누르면, 체크할 때마다 두 기기가 자동으로 실시간 동기화됩니다.
     </div>
 
     <!-- Data Reset -->
@@ -1736,6 +1934,26 @@
   /* ==========================================================================
      CLOUD & MULTI-DEVICE SYNC ENGINE (Instant Sync across Phone & Tablet)
      ========================================================================== */
+  const SYNC_APP_KEY = 'ccfjm9gs';
+  let lastLocalUpdateTime = 0;
+
+  function strToHex(str) {
+    let hex = '';
+    const utf8 = unescape(encodeURIComponent(str));
+    for (let i = 0; i < utf8.length; i++) {
+      hex += utf8.charCodeAt(i).toString(16).padStart(2, '0');
+    }
+    return hex;
+  }
+
+  function hexToStr(hex) {
+    let str = '';
+    for (let i = 0; i < hex.length; i += 2) {
+      str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    }
+    return decodeURIComponent(escape(str));
+  }
+
   function setSyncStatus(status, text) {
     const dot = document.getElementById('sync-dot');
     const txt = document.getElementById('sync-text');
@@ -1761,30 +1979,50 @@
   }
 
   async function pushToCloud(showNotice) {
-    if (!currentSyncCode) return;
+    if (!currentSyncCode) {
+      if (showNotice) alert('동기화 코드를 먼저 입력해주세요.');
+      return;
+    }
     setSyncStatus('syncing', '클라우드 저장 중...');
     
+    const now = Date.now();
+    lastLocalUpdateTime = now;
+    const payload = {
+      updatedAt: now,
+      code: currentSyncCode,
+      state: plannerState
+    };
+    const jsonStr = JSON.stringify(payload);
+
+    let saved = false;
+
+    // 1. Local Server API (/api/sync)
     try {
-      const payload = {
-        updatedAt: Date.now(),
-        code: currentSyncCode,
-        state: plannerState
-      };
-      
-      const res = await fetch(`https://kvdb.io/bucket_${encodeURIComponent(currentSyncCode)}/planner_data`, {
+      const localRes = await fetch('/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: jsonStr
       });
+      if (localRes.ok) saved = true;
+    } catch(e) {}
 
-      if (res.ok) {
-        setSyncStatus('synced', `동기화됨 (${currentSyncCode})`);
-        if (showNotice) alert('클라우드에 성공적으로 백업되었습니다!');
-      } else {
-        setSyncStatus('offline', '로컬 저장됨');
-      }
-    } catch(err) {
+    // 2. Reliable Cloud KeyValue Store (Works anywhere including Vercel)
+    try {
+      const hexPayload = strToHex(jsonStr);
+      const safeKey = 'exam_' + encodeURIComponent(currentSyncCode.replace(/[^a-zA-Z0-9_-]/g, '_'));
+      const cloudRes = await fetch(`https://keyvalue.immanuel.co/api/KeyVal/UpdateValue/${SYNC_APP_KEY}/${safeKey}/${hexPayload}`, {
+        method: 'POST',
+        headers: { 'Content-Length': '0' }
+      });
+      if (cloudRes.ok) saved = true;
+    } catch(e) {}
+
+    if (saved) {
+      setSyncStatus('synced', `동기화됨 (${currentSyncCode})`);
+      if (showNotice) alert(`[${currentSyncCode}] 코드로 클라우드에 성공적으로 백업되었습니다!`);
+    } else {
       setSyncStatus('offline', '로컬 저장됨');
+      if (showNotice) alert('클라우드 백업에 실패했습니다. 네트워크 연결을 확인해주세요.');
     }
   }
 
@@ -1792,25 +2030,55 @@
     if (!currentSyncCode) return;
     setSyncStatus('syncing', '클라우드 확인 중...');
 
+    let cloudData = null;
+
+    // 1. Check Local Server API
     try {
-      const res = await fetch(`https://kvdb.io/bucket_${encodeURIComponent(currentSyncCode)}/planner_data`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.state) {
-          ALL_TASKS.forEach(t => {
-            const val = Boolean(data.state[t]);
-            plannerState[t] = val;
-            setLocal(t, val ? 'true' : 'false');
-          });
-          updateAllViews();
-          setSyncStatus('synced', `동기화됨 (${currentSyncCode})`);
-          if (showNotice) alert('클라우드에서 최신 데이터를 가져왔습니다!');
-          return;
+      const localRes = await fetch(`/api/sync?code=${encodeURIComponent(currentSyncCode)}`);
+      if (localRes.ok) {
+        const resJson = await localRes.json();
+        if (resJson && resJson.success && resJson.data && resJson.data.state) {
+          cloudData = resJson.data;
         }
       }
+    } catch(e) {}
+
+    // 2. Check Cloud KeyValue Store
+    try {
+      const safeKey = 'exam_' + encodeURIComponent(currentSyncCode.replace(/[^a-zA-Z0-9_-]/g, '_'));
+      const cloudRes = await fetch(`https://keyvalue.immanuel.co/api/KeyVal/GetValue/${SYNC_APP_KEY}/${safeKey}`);
+      if (cloudRes.ok) {
+        const hex = await cloudRes.json();
+        if (hex && typeof hex === 'string') {
+          const parsed = JSON.parse(hexToStr(hex));
+          if (parsed && parsed.state) {
+            if (!cloudData || (parsed.updatedAt && parsed.updatedAt > (cloudData.updatedAt || 0))) {
+              cloudData = parsed;
+            }
+          }
+        }
+      }
+    } catch(e) {}
+
+    if (cloudData && cloudData.state) {
+      // Prevent stale cloud data from overwriting very recent local clicks
+      if (cloudData.updatedAt && lastLocalUpdateTime && cloudData.updatedAt < lastLocalUpdateTime) {
+        setSyncStatus('synced', `동기화됨 (${currentSyncCode})`);
+        return;
+      }
+
+      ALL_TASKS.forEach(t => {
+        const val = Boolean(cloudData.state[t]);
+        plannerState[t] = val;
+        setLocal(t, val ? 'true' : 'false');
+      });
+      lastLocalUpdateTime = cloudData.updatedAt || Date.now();
+      updateAllViews();
+      setSyncStatus('synced', `동기화됨 (${currentSyncCode})`);
+      if (showNotice) alert(`[${currentSyncCode}] 클라우드에서 최신 데이터를 성공적으로 가져왔습니다!`);
+    } else {
       setSyncStatus('synced', `연결됨 (${currentSyncCode})`);
-    } catch(err) {
-      setSyncStatus('offline', '로컬 저장됨');
+      if (showNotice) alert(`[${currentSyncCode}] 코드로 저장된 클라우드 데이터가 없습니다.\n현재 기기에서 먼저 [지금 클라우드로 백업]을 눌러주세요.`);
     }
   }
 
@@ -1833,18 +2101,16 @@
     }
     currentSyncCode = newCode;
     setLocal('__room_code', newCode);
-    alert(`동기화 코드가 [${newCode}] (으)로 설정되었습니다.\n이제 다른 폰/아이패드에서도 이 코드를 입력하시면 실시간으로 연동됩니다!`);
+    alert(`동기화 코드가 [${newCode}] (으)로 설정되었습니다.\n이제 다른 기기(폰/패드)에서도 이 코드를 입력하시면 실시간으로 연동됩니다!`);
     pullFromCloud(true);
-    generateSyncQR();
   }
 
   /* ==========================================================================
-     QR CODE & LINK SHARING (Instant scan for iPad/Phone)
+     DEVICE SYNC MODAL CONTROLLER
      ========================================================================== */
   function openSyncModal() {
     const modal = document.getElementById('sync-modal');
     modal.classList.add('open');
-    generateSyncQR();
   }
 
   function closeSyncModal() {
@@ -1853,38 +2119,6 @@
 
   function closeSyncModalOnBg(e) {
     if (e.target.id === 'sync-modal') closeSyncModal();
-  }
-
-  function generateSyncQR() {
-    const canvasBox = document.getElementById('qrcode-canvas');
-    if (!canvasBox) return;
-    canvasBox.innerHTML = '';
-
-    const shareUrl = getShareableUrl();
-    if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
-      const canvas = document.createElement('canvas');
-      QRCode.toCanvas(canvas, shareUrl, { width: 180, margin: 1 }, function (error) {
-        if (!error) canvasBox.appendChild(canvas);
-      });
-    }
-  }
-
-  function getShareableUrl() {
-    const base = window.location.origin + window.location.pathname;
-    const jsonStr = JSON.stringify(plannerState);
-    const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
-    return `${base}?room=${encodeURIComponent(currentSyncCode)}&state=${encoded}`;
-  }
-
-  function copyShareLink() {
-    const url = getShareableUrl();
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(() => {
-        alert('동기화 링크가 클립보드에 복사되었습니다!\n카카오톡이나 메모장에 붙여넣어 폰/패드에서 열어보세요.');
-      });
-    } else {
-      prompt('아래 링크를 복사하여 폰/패드에서 여세요:', url);
-    }
   }
 
   function resetAllProgress() {

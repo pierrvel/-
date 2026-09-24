@@ -19,6 +19,61 @@ function getLocalIp() {
 
 const server = http.createServer((req, res) => {
   let reqPath = req.url.split('?')[0];
+
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  // Local Sync API endpoint
+  if (reqPath === '/api/sync') {
+    const dataFilePath = path.join(__dirname, 'sync_data.json');
+    if (req.method === 'GET') {
+      const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+      const code = urlObj.searchParams.get('code') || 'DEFAULT';
+      try {
+        if (fs.existsSync(dataFilePath)) {
+          const raw = fs.readFileSync(dataFilePath, 'utf8');
+          const allData = JSON.parse(raw);
+          const roomData = allData[code] || null;
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ success: true, data: roomData }));
+          return;
+        }
+      } catch (e) {}
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, data: null }));
+      return;
+    } else if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(body);
+          const code = payload.code || 'DEFAULT';
+          let allData = {};
+          if (fs.existsSync(dataFilePath)) {
+            try { allData = JSON.parse(fs.readFileSync(dataFilePath, 'utf8')); } catch(e) {}
+          }
+          allData[code] = payload;
+          fs.writeFileSync(dataFilePath, JSON.stringify(allData, null, 2), 'utf8');
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ success: true }));
+        } catch(e) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      });
+      return;
+    }
+  }
+
   let filePath = path.join(__dirname, reqPath === '/' ? 'index.html' : reqPath);
 
   fs.readFile(filePath, (err, content) => {
