@@ -971,6 +971,153 @@
         font-size: 0.82rem;
       }
     }
+
+    /* Drag & Drop Visuals */
+    .day-card .task-item.has-cb {
+      cursor: grab;
+      user-select: none;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s, opacity 0.15s;
+    }
+    .day-card .task-item.has-cb:active {
+      cursor: grabbing;
+    }
+    .day-card .task-item.dragging {
+      opacity: 0.45 !important;
+      transform: scale(0.97);
+      border: 2px dashed var(--primary) !important;
+    }
+    .day-card.drag-over {
+      background: rgba(99, 102, 241, 0.08) !important;
+      border: 2px dashed var(--primary) !important;
+      box-shadow: 0 0 14px rgba(99, 102, 241, 0.25) !important;
+    }
+
+    /* Move / Option Button beside Time */
+    .task-opt-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 4px;
+      transition: all 0.15s ease;
+      vertical-align: middle;
+    }
+    .task-opt-btn:hover {
+      background: var(--border);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    .day-add-task-btn {
+      background: var(--bg);
+      border: 1px dashed var(--border);
+      color: var(--primary);
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: auto;
+      transition: all 0.15s ease;
+    }
+    .day-add-task-btn:hover {
+      background: var(--border);
+      border-color: var(--primary);
+    }
+
+    /* AI / Manual Schedule Overrides Banner */
+    .ai-overrides-banner {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 0.82rem;
+      animation: fadeIn 0.2s ease;
+    }
+
+    /* Day Selector Pills in Task Editor */
+    .day-selector-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .day-pill-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 4px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .day-pill-btn:hover {
+      border-color: var(--primary);
+    }
+    .day-pill-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 6px rgba(99, 102, 241, 0.35);
+    }
+
+    /* Floating Toast */
+    .study-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b;
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      opacity: 0;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .study-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .study-toast button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .study-toast button:hover {
+      opacity: 0.9;
+    }
   </style>
 </head>
 <body>
@@ -1002,8 +1149,14 @@
         <button class="tool-btn ai-btn" onclick="openAiModal()" title="제미나이 AI 일정 코치">
           ✨ AI 코치
         </button>
+        <button class="tool-btn" id="undo-btn" onclick="undoLastScheduleAction()" title="최근 일정 변경 실행 취소" style="display: none; color: #6366f1; border-color: #6366f1; font-weight: 800;">
+          ↩️ 되돌리기
+        </button>
+        <button class="tool-btn" id="reset-plan-btn" onclick="confirmResetSchedule()" title="AI/수동 일정 변경을 원래 기본 상태로 복원">
+          🔄 원래 플랜 복원
+        </button>
         <button class="tool-btn" onclick="openSyncModal()" title="폰/아이패드/PC 연동">
-          📱 폰/패드 동기화
+          📱 동기화
         </button>
         <button class="tool-btn" onclick="toggleTheme()" id="theme-btn" title="다크/라이트 모드">
           🌙 야간 모드
@@ -1368,6 +1521,8 @@
 
     <!-- 2. DAILY TIMETABLE VIEW -->
     <div id="view-daily" class="daily-container" style="display: none;">
+      <!-- AI / Manual Schedule Overrides Status Banner -->
+      <div id="ai-overrides-banner" class="ai-overrides-banner" style="display: none;"></div>
       
       <!-- 9/24 목 -->
       <div class="day-card" data-day="0924">
@@ -1876,6 +2031,129 @@
   </div>
 </div>
 
+<!-- TASK ADJUSTMENT & MOVE MODAL -->
+<div class="modal-overlay" id="task-editor-modal" onclick="closeTaskEditorOnBg(event)">
+  <div class="modal-card" style="max-width: 440px;">
+    <div class="modal-title">
+      <span id="editor-task-title">📝 과제 일정 조정</span>
+      <button class="modal-close" onclick="closeTaskEditor()">&times;</button>
+    </div>
+    
+    <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;">
+      <div id="editor-task-desc" style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;"></div>
+      <div id="editor-task-orig" style="font-size: 0.72rem; color: var(--primary); margin-top: 4px; font-weight: 700;"></div>
+    </div>
+
+    <!-- Target Day Selection -->
+    <div style="margin-bottom: 14px;">
+      <label style="font-size: 0.78rem; font-weight: 800; display: block; margin-bottom: 6px;">📅 이동할 날짜 선택</label>
+      <div class="day-selector-grid" id="editor-day-selector">
+        <button type="button" class="day-pill-btn" data-day="0924">9/24(목)</button>
+        <button type="button" class="day-pill-btn" data-day="0925">9/25(금)</button>
+        <button type="button" class="day-pill-btn" data-day="0926">9/26(토)</button>
+        <button type="button" class="day-pill-btn" data-day="0927">9/27(일)</button>
+        <button type="button" class="day-pill-btn" data-day="0928">9/28(월)</button>
+        <button type="button" class="day-pill-btn" data-day="0929">9/29(화)</button>
+        <button type="button" class="day-pill-btn" data-day="0930">9/30(수)</button>
+        <button type="button" class="day-pill-btn" data-day="1001">10/1(목)</button>
+      </div>
+    </div>
+
+    <!-- Time Slot Input -->
+    <div style="margin-bottom: 14px;">
+      <label style="font-size: 0.78rem; font-weight: 800; display: block; margin-bottom: 6px;">⏰ 시간대 변경</label>
+      <div style="display: flex; gap: 6px;">
+        <input type="text" id="editor-time-input" class="sync-input" placeholder="예: 14:00 ~ 16:00" style="flex: 1;">
+        <button type="button" class="tool-btn" onclick="adjustEditorTime(30)">+30분</button>
+        <button type="button" class="tool-btn" onclick="adjustEditorTime(60)">+1시간</button>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 12px;">
+      <div id="editor-special-actions">
+        <!-- populated dynamically: reset to default or delete custom task -->
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <button class="tool-btn" type="button" onclick="closeTaskEditor()">취소</button>
+        <button class="btn-primary" type="button" onclick="saveTaskEditorChanges()" style="padding: 7px 16px;">적용</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULE CHANGES LOG MODAL -->
+<div class="modal-overlay" id="schedule-changes-modal" onclick="closeScheduleChangesOnBg(event)">
+  <div class="modal-card" style="max-width: 500px;">
+    <div class="modal-title">
+      <span>📋 플랜 변경 내역 (AI / 직접 조정)</span>
+      <button class="modal-close" onclick="closeScheduleChanges()">&times;</button>
+    </div>
+    
+    <div id="schedule-changes-list" style="max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+      <!-- Populated dynamically -->
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 12px;">
+      <button class="tool-btn" style="color: #ef4444; border-color: #ef4444; font-weight: 800;" onclick="confirmResetSchedule()">
+        🔄 기본 플랜으로 전체 복원
+      </button>
+      <button class="btn-primary" onclick="closeScheduleChanges()" style="padding: 7px 16px;">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- MANUAL ADD TASK MODAL -->
+<div class="modal-overlay" id="add-task-modal" onclick="closeAddTaskOnBg(event)">
+  <div class="modal-card" style="max-width: 440px;">
+    <div class="modal-title">
+      <span>➕ 새 일정 직접 추가</span>
+      <button class="modal-close" onclick="closeAddTask()">&times;</button>
+    </div>
+
+    <input type="hidden" id="add-task-day-val" value="0924">
+
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+      <div>
+        <label style="font-size: 0.78rem; font-weight: 800; display: block; margin-bottom: 4px;">과목 선택</label>
+        <select id="add-task-subject" class="sync-input" style="width: 100%; padding: 8px;">
+          <option value="cal1">미적분 Ⅰ (cal1)</option>
+          <option value="cal2">미적분 Ⅱ (cal2)</option>
+          <option value="soc">사회문화 (soc)</option>
+          <option value="eng">영어 Ⅱ (eng)</option>
+          <option value="kor">화법과 언어 (kor)</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="font-size: 0.78rem; font-weight: 800; display: block; margin-bottom: 4px;">과제 제목</label>
+        <input type="text" id="add-task-title" class="sync-input" placeholder="예: 영어 단어 100개 암기" style="width: 100%;">
+      </div>
+
+      <div>
+        <label style="font-size: 0.78rem; font-weight: 800; display: block; margin-bottom: 4px;">시간대</label>
+        <input type="text" id="add-task-time" class="sync-input" placeholder="예: 14:00 ~ 15:30" value="14:00 ~ 15:30" style="width: 100%;">
+      </div>
+
+      <div>
+        <label style="font-size: 0.78rem; font-weight: 800; display: block; margin-bottom: 4px;">상세 메모 (선택)</label>
+        <input type="text" id="add-task-desc" class="sync-input" placeholder="예: 고난도 수록 어휘 집중 정리" style="width: 100%;">
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px;">
+      <button class="tool-btn" onclick="closeAddTask()">취소</button>
+      <button class="btn-primary" onclick="submitManualAddTask()" style="padding: 7px 16px;">추가하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Undo / Alert Toast -->
+<div id="study-toast" class="study-toast">
+  <span id="toast-text"></span>
+  <button id="toast-action-btn" style="display: none;"></button>
+</div>
+
 <!-- Floating Action Button for AI Coach -->
 <div class="ai-fab-btn" onclick="openAiModal()">
   ✨ AI 코치
@@ -1920,6 +2198,74 @@
     '0930': ['e_3', 'e_4', 'e_5', 'e_6'],
     '1001': ['c2_3', 'c2_4', 'c2_5']
   };
+
+  const ORIGINAL_DAILY_TASKS = JSON.parse(JSON.stringify(DAILY_TASKS));
+
+  const ORIGINAL_TIMES = {
+    'c2_1': '16:30 ~ 18:30',
+    's_1': '19:30 ~ 22:00',
+    'c1_1': '22:00 ~ 24:00',
+    'k_1': '06:30 ~ 10:30',
+    'e_1': '11:30 ~ 14:00',
+    's_2': '15:00 ~ 19:00',
+    'k_2': '20:00 ~ 24:00',
+    'k_3': '06:30 ~ 10:30',
+    'e_2': '11:30 ~ 14:30',
+    's_3': '15:30 ~ 19:30',
+    'k_4': '20:30 ~ 22:30',
+    'c2_2': '22:30 ~ 24:00',
+    'c1_2': '07:00 ~ 12:30',
+    's_4_1': '14:00 ~ 17:00',
+    's_4_2': '20:00 ~ 21:00',
+    's_5': '21:00 ~ 23:00',
+    'c1_3': '14:30 ~ 19:00',
+    'c1_4': '20:00 ~ 24:00',
+    'k_5': '14:30 ~ 17:30',
+    's_6': '18:30 ~ 21:30',
+    'k_6': '22:30 ~ 24:00',
+    's_7': '00:00 ~ 01:30',
+    'e_3': '13:00 ~ 16:00',
+    'e_4': '16:00 ~ 17:30',
+    'e_5': '18:00 ~ 20:00',
+    'e_6': '21:00 ~ 24:00',
+    'c2_3': '13:00 ~ 14:00',
+    'c2_4': '14:00 ~ 19:30',
+    'c2_5': '20:30 ~ 24:00'
+  };
+
+  const TASK_DETAILS = {
+    'c1_1': { subject: 'cal1', tag: '미적1', title: '서현고 프린트 변형 선별 풀이 (2h)', desc: '중요 문항 선별 풀이 후 00:00 취침' },
+    'c1_2': { subject: 'cal1', tag: '미적1', title: '서현고 기출 & 선별 문항 총정리 (5.5h)', desc: '9/27(일) 07:00 기상 직후 12:30까지 5.5h 집중 문풀' },
+    'c1_3': { subject: 'cal1', tag: '미적1', title: '미적1 직보 참석 (14:30 ~ 19:00)', desc: '9/28(월) 14:30 ~ 19:00 (4.5h) 학원 직전보강' },
+    'c1_4': { subject: 'cal1', tag: '미적1', title: '오답 총정리 & 서술형 10제 최종 암기 (4h)', desc: '9/28(월) 20:00 귀가 후 취침 전까지 전수 복습' },
+    'k_1':  { subject: 'kor',  tag: '화언',  title: 'Part 2 개념 회독 + 문풀 (4h)', desc: '문법 개념 총정리 후 수록 문제 전수 풀이' },
+    'k_2':  { subject: 'kor',  tag: '화언',  title: 'Part 3 인강 + 문풀 (4h)', desc: '인강 수강 후 수록 문제 전수 풀이 (자정 종료)' },
+    'k_3':  { subject: 'kor',  tag: '화언',  title: 'Part 4 인강 + 문풀 (4h)', desc: '9/26(토) 아침 집중 풀이' },
+    'k_4':  { subject: 'kor',  tag: '화언',  title: 'Part 1 인강 + 문풀 (2h)', desc: '9/26(토) 밤 인강 및 수록 문풀' },
+    'k_5':  { subject: 'kor',  tag: '화언',  title: '오답 총정리 & 교과서 정독 1차 (3h)', desc: '9/29(화) 14:30 미적1 시험 종료 후 집중 회독' },
+    'k_6':  { subject: 'kor',  tag: '화언',  title: '화언 직보 (18:30 ~ 21:30)', desc: '9/29(화) 18:30 학원 직전보강 총정리' },
+    's_1':  { subject: 'soc',  tag: '사문',  title: '4주차 ②, ③ 완료 (2.5h)', desc: '인강 수강 + 엔제프/정리 문풀 완수' },
+    's_2':  { subject: 'soc',  tag: '사문',  title: '5주차 1·2·3 완료 (4h)', desc: '인강 3h + 개념 정리 및 엔제프 문풀 1h' },
+    's_3':  { subject: 'soc',  tag: '사문',  title: '6주차 1·2·3 완강 및 문풀 (4h)', desc: '9/26(토) 인강 3h + 정리·엔제프 1h' },
+    's_4_1':{ subject: 'soc',  tag: '사문',  title: '7주차 1·2·3 인강 수강 (3h)', desc: '9/27(일) 학원 가기 전 인강 완강' },
+    's_4_2':{ subject: 'soc',  tag: '사문',  title: '7주차 정리 & 문풀 (1h)', desc: '9/27(일) 밤 완주 (개념 100% 종료!)' },
+    's_5':  { subject: 'soc',  tag: '사문',  title: '개념완성 훑기 (학교프린트) (2h)', desc: '9/27(일) 밤 본문 정독 및 자료 분석' },
+    's_6':  { subject: 'soc',  tag: '사문',  title: '수특 훑기 & 교과서 훑기 1차 (3h)', desc: '9/29(화) 14:30 국어 직보 전 집중 회독' },
+    's_7':  { subject: 'soc',  tag: '사문',  title: '교과서/프린트 최종 암기 (1.5h)', desc: '9/29(화) 22:30 국어 직보 귀가 후 취침 전 마무리' },
+    'e_1':  { subject: 'eng',  tag: '영어',  title: '모의고사 6지문 분석 (2.5h)', desc: '21, 30, 34, 37, 38, 41~42번 구문 분석 및 주제 정리' },
+    'e_2':  { subject: 'eng',  tag: '영어',  title: '해커스 문풀 5회 & 6회 (3h)', desc: '9/26(토) 시간 재고 풀이 및 오답' },
+    'e_3':  { subject: 'eng',  tag: '영어',  title: '모의고사 6지문 문풀 (3h)', desc: '9/30(수) 13:00 귀가 직후 변형 문풀' },
+    'e_4':  { subject: 'eng',  tag: '영어',  title: '교과서 문풀 1차 (1.5h)', desc: '9/30(수) 16:00 영어 직보 가기 전 풀이' },
+    'e_5':  { subject: 'eng',  tag: '영어',  title: '영어 직보 참석 (18:00 ~ 20:00)', desc: '9/30(수) 핵심 변형 포인트 및 직보 자료 확인' },
+    'e_6':  { subject: 'eng',  tag: '영어',  title: '교과서 잔여/오답 & 서술 15문장 (3h)', desc: '9/30(수) 21:00 직보 귀가 후 서술형 암기 및 정리' },
+    'c2_1': { subject: 'cal2', tag: '미적2', title: '몫의 미분법 & 합성함수 미분 개념 (2h)', desc: '인강 완강 후 도함수 공식 완벽 암기' },
+    'c2_2': { subject: 'cal2', tag: '미적2', title: '삼각함수 미분 개념 (1.5h)', desc: '9/26(토) 밤 공식 암기 및 예제 풀이' },
+    'c2_3': { subject: 'cal2', tag: '미적2', title: '개념 총복습 & 공식 암기 (1h)', desc: '10/1(목) 13:00 영어 시험 귀가 직후 복습' },
+    'c2_4': { subject: 'cal2', tag: '미적2', title: '미적2 직보: 교과서 & 수특 전 범위 올클리어!', desc: '10/1(목) 14:00 ~ 19:30 학원에서 교과서/수특 전수 풀이' },
+    'c2_5': { subject: 'cal2', tag: '미적2', title: '직보 오답 재풀이 & 서술형 공식 암기 (3.5h)', desc: '10/1(목) 20:30 틀린 문제 재확인 후 00:00 취침' }
+  };
+
+  const scheduleHistory = [];
 
   const plannerState = {};
 
@@ -1979,6 +2325,9 @@
 
     // 2-1. Apply Dynamic/AI Tasks & Schedule Overrides
     renderDynamicTasks();
+
+    // 2-2. Setup Daily Task Drag-and-Drop & Interactive Move buttons
+    setupDailyTaskInteractivity();
 
     // 3. Render initial UI & D-Day
     updateAllViews();
@@ -2654,68 +3003,647 @@
     }
   }
 
+  /* ==========================================================================
+     DYNAMIC TASKS, DRAG & DROP, MANUAL ADJUSTMENT & ROLLBACK ENGINE
+     ========================================================================== */
+  let draggedTaskId = null;
+  let currentEditingTaskId = null;
+  let currentSelectedDay = null;
+  let toastTimer = null;
+
   function renderDynamicTasks() {
-    // 1. Register custom tasks to ALL_TASKS and inject into day cards
-    customTasks.forEach(item => {
-      if (!ALL_TASKS.includes(item.id)) {
-        ALL_TASKS.push(item.id);
+    // 1. Move all original tasks back to their base days if no override exists
+    Object.keys(ORIGINAL_DAILY_TASKS).forEach(day => {
+      const targetList = document.querySelector(`.day-card[data-day="${day}"] .task-list`);
+      if (targetList) {
+        ORIGINAL_DAILY_TASKS[day].forEach(taskId => {
+          if (!taskOverrides[taskId] || !taskOverrides[taskId].toDay) {
+            const el = document.querySelector(`[data-task-row="${taskId}"]`);
+            if (el && el.parentElement !== targetList) {
+              targetList.appendChild(el);
+              const cb = el.querySelector('input[type="checkbox"]');
+              if (cb) cb.setAttribute('data-day-task', day);
+            }
+            if (!taskOverrides[taskId] || !taskOverrides[taskId].time) {
+              const slot = el ? el.querySelector('.time-slot') : null;
+              if (slot && ORIGINAL_TIMES[taskId]) slot.textContent = ORIGINAL_TIMES[taskId];
+            }
+          }
+        });
       }
+    });
+
+    // 2. Apply task overrides (move task to different day / change time)
+    Object.keys(taskOverrides).forEach(taskId => {
+      const info = taskOverrides[taskId];
+      const el = document.querySelector(`[data-task-row="${taskId}"]`);
+      if (el) {
+        if (info.toDay) {
+          const targetList = document.querySelector(`.day-card[data-day="${info.toDay}"] .task-list`);
+          if (targetList && el.parentElement !== targetList) {
+            targetList.appendChild(el);
+            const cb = el.querySelector('input[type="checkbox"]');
+            if (cb) cb.setAttribute('data-day-task', info.toDay);
+          }
+        }
+        if (info.time) {
+          const slot = el.querySelector('.time-slot');
+          if (slot) slot.textContent = info.time;
+        }
+      }
+    });
+
+    // 3. Remove deleted custom tasks from DOM
+    document.querySelectorAll('[id^="custom-task-"]').forEach(node => {
+      const id = node.id.replace('custom-task-', '');
+      if (!customTasks.some(t => t.id === id)) {
+        node.remove();
+      }
+    });
+
+    // 4. Render active custom tasks
+    customTasks.forEach(item => {
+      if (!ALL_TASKS.includes(item.id)) ALL_TASKS.push(item.id);
       if (item.done !== undefined && plannerState[item.id] === undefined) {
         plannerState[item.id] = Boolean(item.done);
       }
-
-      // Check if already in DOM
       let el = document.getElementById('custom-task-' + item.id);
       if (!el) {
         const dayCard = document.querySelector(`.day-card[data-day="${item.day}"] .task-list`);
         if (dayCard) {
           el = document.createElement('label');
           el.id = 'custom-task-' + item.id;
-          el.className = 'task-item has-cb';
+          el.className = 'task-item has-cb custom-ai-task';
           el.setAttribute('data-task-row', item.id);
+          el.setAttribute('draggable', 'true');
           el.innerHTML = `
             <input type="checkbox" data-task="${item.id}" data-day-task="${item.day}">
-            <span class="time-slot">${item.time || '자율'}</span>
+            <span class="time-slot" onclick="openTaskEditor(event, '${item.id}')" title="클릭하여 날짜/시간 변경">${escapeHtml(item.time || '자율')}</span>
+            <button type="button" class="task-opt-btn" onclick="openTaskEditor(event, '${item.id}')" title="날짜/시간 이동 및 조정">⇄</button>
             <div class="task-content">
-              <div class="task-title"><span class="tag tag-${item.subject || 'cal1'}">AI 과제</span>${item.title}</div>
-              <div class="task-desc">${item.desc || 'AI 코치 맞춤형 등록 일정'}</div>
+              <div class="task-title"><span class="tag tag-${item.subject || 'cal1'}">추가 과제</span>${escapeHtml(item.title)}</div>
+              <div class="task-desc">${escapeHtml(item.desc || '맞춤형 등록 일정')}</div>
             </div>
           `;
           dayCard.appendChild(el);
         }
+      } else {
+        const currentTargetList = document.querySelector(`.day-card[data-day="${item.day}"] .task-list`);
+        if (currentTargetList && el.parentElement !== currentTargetList) {
+          currentTargetList.appendChild(el);
+          const cb = el.querySelector('input[type="checkbox"]');
+          if (cb) cb.setAttribute('data-day-task', item.day);
+        }
+        const slot = el.querySelector('.time-slot');
+        if (slot && item.time) slot.textContent = item.time;
       }
     });
 
-    // 2. Handle Task Overrides (Moving tasks to other days or updating time)
-    Object.keys(taskOverrides).forEach(taskId => {
-      const info = taskOverrides[taskId];
-      const el = document.querySelector(`[data-task-row="${taskId}"]`);
-      if (el && info.toDay) {
-        const targetList = document.querySelector(`.day-card[data-day="${info.toDay}"] .task-list`);
-        if (targetList && el.parentElement !== targetList) {
-          targetList.appendChild(el);
-          const cb = el.querySelector('input[type="checkbox"]');
-          if (cb) cb.setAttribute('data-day-task', info.toDay);
-        }
+    // 5. Setup interaction bindings (draggable & buttons)
+    setupDailyTaskInteractivity();
+
+    // 6. Update overrides banner & undo button state
+    updateOverridesBanner();
+    updateUndoButton();
+  }
+
+  function setupDailyTaskInteractivity() {
+    // 1. Day Cards drop target & Add button
+    document.querySelectorAll('.day-card').forEach(card => {
+      const day = card.getAttribute('data-day');
+      const header = card.querySelector('.day-header');
+      if (header && !header.querySelector('.day-add-task-btn')) {
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'day-add-task-btn';
+        addBtn.title = '이 날짜에 새 일정 직접 추가';
+        addBtn.textContent = '+ 일정 추가';
+        addBtn.onclick = (e) => { e.stopPropagation(); openAddTaskModal(day); };
+        header.appendChild(addBtn);
       }
-      if (el && info.time) {
-        const slot = el.querySelector('.time-slot');
-        if (slot) slot.textContent = info.time;
+
+      card.ondragover = handleDragOver;
+      card.ondragleave = handleDragLeave;
+      card.ondrop = handleDrop;
+    });
+
+    // 2. Task Items draggable & move button
+    document.querySelectorAll('.day-card .task-item.has-cb').forEach(row => {
+      const taskId = row.getAttribute('data-task-row') || row.querySelector('input[type="checkbox"]')?.getAttribute('data-task');
+      if (!taskId) return;
+
+      row.setAttribute('draggable', 'true');
+      row.ondragstart = handleDragStart;
+      row.ondragend = handleDragEnd;
+
+      const slot = row.querySelector('.time-slot');
+      if (slot) {
+        slot.style.cursor = 'pointer';
+        slot.title = '클릭하여 날짜/시간 변경';
+        slot.onclick = (e) => openTaskEditor(e, taskId);
+
+        if (!row.querySelector('.task-opt-btn')) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'task-opt-btn';
+          btn.title = '날짜/시간 이동 및 조정';
+          btn.innerHTML = '⇄';
+          btn.onclick = (e) => openTaskEditor(e, taskId);
+          slot.insertAdjacentElement('afterend', btn);
+        }
       }
     });
   }
 
+  function handleDragStart(e) {
+    const row = e.target.closest('[data-task-row]');
+    if (!row) return;
+    const taskId = row.getAttribute('data-task-row');
+    draggedTaskId = taskId;
+    try {
+      e.dataTransfer.setData('text/plain', taskId);
+      e.dataTransfer.effectAllowed = 'move';
+    } catch(err) {}
+    row.classList.add('dragging');
+  }
+
+  function handleDragEnd(e) {
+    const row = e.target.closest('[data-task-row]');
+    if (row) row.classList.remove('dragging');
+    document.querySelectorAll('.day-card').forEach(c => c.classList.remove('drag-over'));
+    draggedTaskId = null;
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    try { e.dataTransfer.dropEffect = 'move'; } catch(err) {}
+    const dayCard = e.target.closest('.day-card');
+    if (dayCard && !dayCard.classList.contains('drag-over')) {
+      document.querySelectorAll('.day-card').forEach(c => c.classList.remove('drag-over'));
+      dayCard.classList.add('drag-over');
+    }
+  }
+
+  function handleDragLeave(e) {
+    const dayCard = e.target.closest('.day-card');
+    if (dayCard && !dayCard.contains(e.relatedTarget)) {
+      dayCard.classList.remove('drag-over');
+    }
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    const dayCard = e.target.closest('.day-card');
+    if (!dayCard) return;
+    dayCard.classList.remove('drag-over');
+    const taskId = (e.dataTransfer ? e.dataTransfer.getData('text/plain') : null) || draggedTaskId;
+    if (!taskId) return;
+    const targetDay = dayCard.getAttribute('data-day');
+    if (!targetDay) return;
+
+    moveTaskToDay(taskId, targetDay);
+  }
+
+  function moveTaskToDay(taskId, targetDay, newTime) {
+    const origDay = Object.keys(ORIGINAL_DAILY_TASKS).find(d => ORIGINAL_DAILY_TASKS[d].includes(taskId));
+    const isCustom = taskId.startsWith('cust_');
+    const details = TASK_DETAILS[taskId] || (isCustom ? customTasks.find(t => t.id === taskId) : { title: taskId });
+    const taskTitle = details?.title || taskId;
+
+    recordScheduleSnapshot(`[${taskTitle}] ➔ ${formatDayName(targetDay)} 이동`);
+
+    if (isCustom) {
+      const cust = customTasks.find(t => t.id === taskId);
+      if (cust) {
+        cust.day = targetDay;
+        if (newTime) cust.time = newTime;
+        setLocal('__custom_tasks', JSON.stringify(customTasks));
+      }
+    } else {
+      const currentOverride = taskOverrides[taskId] || {};
+      const currentSlot = document.querySelector(`[data-task-row="${taskId}"] .time-slot`);
+      const timeToUse = newTime || currentOverride.time || (currentSlot ? currentSlot.textContent.trim() : (ORIGINAL_TIMES[taskId] || '자율'));
+
+      if (origDay === targetDay && timeToUse === ORIGINAL_TIMES[taskId]) {
+        delete taskOverrides[taskId];
+      } else {
+        taskOverrides[taskId] = { toDay: targetDay, time: timeToUse };
+      }
+      setLocal('__task_overrides', JSON.stringify(taskOverrides));
+    }
+
+    renderDynamicTasks();
+    updateAllViews();
+    triggerCloudSyncDebounced();
+    showToast(`✅ [${taskTitle}] ➔ [${formatDayName(targetDay)}] 일자로 이동됨`, true);
+  }
+
   function shiftDayTimes(dayCode, minutes) {
-    const list = document.querySelectorAll(`.day-card[data-day="${dayCode}"] .time-slot`);
-    list.forEach(slot => {
-      const orig = slot.textContent;
-      slot.textContent = orig.replace(/(\d{1,2}):(\d{2})/g, (m, h, min) => {
-        let total = parseInt(h, 10) * 60 + parseInt(min, 10) + minutes;
-        if (total < 0) total += 24 * 60;
-        total = total % (24 * 60);
-        return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
-      });
+    recordScheduleSnapshot(`${formatDayName(dayCode)} 일정 ${minutes}분 시간 순연`);
+    const list = document.querySelectorAll(`.day-card[data-day="${dayCode}"] .task-item`);
+    list.forEach(row => {
+      const taskId = row.getAttribute('data-task-row');
+      const slot = row.querySelector('.time-slot');
+      if (slot && taskId) {
+        const orig = slot.textContent;
+        const newTime = orig.replace(/(\d{1,2}):(\d{2})/g, (m, h, min) => {
+          let total = parseInt(h, 10) * 60 + parseInt(min, 10) + minutes;
+          if (total < 0) total += 24 * 60;
+          total = total % (24 * 60);
+          return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
+        });
+        slot.textContent = newTime;
+        if (!taskOverrides[taskId]) taskOverrides[taskId] = {};
+        taskOverrides[taskId].time = newTime;
+      }
     });
+    setLocal('__task_overrides', JSON.stringify(taskOverrides));
+    updateOverridesBanner();
+  }
+
+  function recordScheduleSnapshot(desc) {
+    scheduleHistory.push({
+      desc: desc || '일정 변경',
+      customTasks: JSON.parse(JSON.stringify(customTasks)),
+      taskOverrides: JSON.parse(JSON.stringify(taskOverrides)),
+      timestamp: Date.now()
+    });
+    if (scheduleHistory.length > 20) scheduleHistory.shift();
+    updateUndoButton();
+  }
+
+  function undoLastScheduleAction() {
+    if (scheduleHistory.length === 0) {
+      alert('되돌릴 이전 변경 내역이 없습니다.');
+      return;
+    }
+    const prev = scheduleHistory.pop();
+    customTasks = prev.customTasks || [];
+    taskOverrides = prev.taskOverrides || {};
+
+    setLocal('__custom_tasks', JSON.stringify(customTasks));
+    setLocal('__task_overrides', JSON.stringify(taskOverrides));
+
+    // Reset DOM times
+    Object.keys(ORIGINAL_TIMES).forEach(taskId => {
+      if (!taskOverrides[taskId]) {
+        const row = document.querySelector(`[data-task-row="${taskId}"]`);
+        if (row) {
+          const slot = row.querySelector('.time-slot');
+          if (slot) slot.textContent = ORIGINAL_TIMES[taskId];
+        }
+      }
+    });
+
+    renderDynamicTasks();
+    updateAllViews();
+    triggerCloudSyncDebounced();
+    updateUndoButton();
+    showToast(`↩️ [${prev.desc}] 이전 상태로 되돌렸습니다.`, false);
+  }
+
+  function updateUndoButton() {
+    const btn = document.getElementById('undo-btn');
+    if (btn) {
+      btn.style.display = scheduleHistory.length > 0 ? 'inline-flex' : 'none';
+      btn.title = scheduleHistory.length > 0 ? `실행 취소: ${scheduleHistory[scheduleHistory.length - 1].desc}` : '되돌리기';
+    }
+  }
+
+  function confirmResetSchedule() {
+    if (!confirm('AI 및 사용자가 변경/추가한 모든 일정 조정을 취소하고,\n원래 기본 시간표로 깨끗하게 복원하시겠습니까?\n(체크한 진도율은 그대로 유지됩니다)')) {
+      return;
+    }
+    recordScheduleSnapshot('기본 시간표 전체 복원 전');
+    customTasks = [];
+    taskOverrides = {};
+    setLocal('__custom_tasks', JSON.stringify([]));
+    setLocal('__task_overrides', JSON.stringify({}));
+
+    // Reset all original task slots to default times
+    Object.keys(ORIGINAL_TIMES).forEach(taskId => {
+      const row = document.querySelector(`[data-task-row="${taskId}"]`);
+      if (row) {
+        const slot = row.querySelector('.time-slot');
+        if (slot) slot.textContent = ORIGINAL_TIMES[taskId];
+      }
+    });
+
+    renderDynamicTasks();
+    updateAllViews();
+    triggerCloudSyncDebounced();
+    closeScheduleChanges();
+    showToast('✅ 모든 일정이 원래 기본 시간표로 깨끗하게 복원되었습니다!', false);
+  }
+
+  function updateOverridesBanner() {
+    const banner = document.getElementById('ai-overrides-banner');
+    if (!banner) return;
+
+    const overrideCount = Object.keys(taskOverrides).length;
+    const customCount = customTasks.length;
+    const total = overrideCount + customCount;
+
+    if (total > 0) {
+      banner.style.display = 'flex';
+      banner.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span>⚡ <strong>일정 조정 ${total}건 적용 중</strong> (기본 시간표와 다른 상태입니다)</span>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="tool-btn" type="button" onclick="showScheduleChangesModal()" style="font-size:0.74rem; padding:3px 8px;">📋 변경 내역</button>
+          <button class="tool-btn" type="button" onclick="confirmResetSchedule()" style="font-size:0.74rem; padding:3px 8px; color:#ef4444; border-color:#ef4444; font-weight:800;">🔄 원래대로 전체 복원</button>
+        </div>
+      `;
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  function showScheduleChangesModal() {
+    const modal = document.getElementById('schedule-changes-modal');
+    const list = document.getElementById('schedule-changes-list');
+    if (!modal || !list) return;
+
+    list.innerHTML = '';
+    const overrideKeys = Object.keys(taskOverrides);
+
+    if (overrideKeys.length === 0 && customTasks.length === 0) {
+      list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.85rem;">현재 변경되거나 추가된 일정이 없습니다.<br>모든 일정이 원래 기본 시간표 상태입니다.</div>';
+    } else {
+      overrideKeys.forEach(taskId => {
+        const info = taskOverrides[taskId];
+        const origDay = Object.keys(ORIGINAL_DAILY_TASKS).find(d => ORIGINAL_DAILY_TASKS[d].includes(taskId));
+        const details = TASK_DETAILS[taskId] || { title: taskId, tag: '과제' };
+        const row = document.createElement('div');
+        row.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px;';
+        row.innerHTML = `
+          <div style="font-size:0.8rem; min-width:0; flex:1;">
+            <div style="font-weight:700;"><span class="tag tag-${details.subject || 'cal1'}">${details.tag || '과제'}</span>${escapeHtml(details.title)}</div>
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
+              원래: <strong>${formatDayName(origDay)} ${ORIGINAL_TIMES[taskId] || ''}</strong> ➔ 
+              현재: <strong style="color:var(--primary);">${formatDayName(info.toDay || origDay)} ${info.time || ''}</strong>
+            </div>
+          </div>
+          <button class="tool-btn" style="font-size:0.72rem; padding:3px 7px; color:#ef4444;" onclick="resetSingleTaskOverride('${taskId}')">원래대로</button>
+        `;
+        list.appendChild(row);
+      });
+
+      customTasks.forEach(task => {
+        const row = document.createElement('div');
+        row.style.cssText = 'background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px;';
+        row.innerHTML = `
+          <div style="font-size:0.8rem; min-width:0; flex:1;">
+            <div style="font-weight:700;"><span class="tag tag-${task.subject || 'cal1'}">추가과제</span>${escapeHtml(task.title)}</div>
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
+              배정일: <strong>${formatDayName(task.day)} ${task.time || '자율'}</strong>
+            </div>
+          </div>
+          <button class="tool-btn" style="font-size:0.72rem; padding:3px 7px; color:#ef4444;" onclick="deleteCustomTask('${task.id}')">삭제</button>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    modal.classList.add('open');
+  }
+
+  function closeScheduleChanges() {
+    document.getElementById('schedule-changes-modal')?.classList.remove('open');
+  }
+
+  function closeScheduleChangesOnBg(e) {
+    if (e.target.id === 'schedule-changes-modal') closeScheduleChanges();
+  }
+
+  function resetSingleTaskOverride(taskId) {
+    recordScheduleSnapshot(`과제 [${taskId}] 원위치 복원`);
+    delete taskOverrides[taskId];
+    setLocal('__task_overrides', JSON.stringify(taskOverrides));
+    const origTime = ORIGINAL_TIMES[taskId];
+    const row = document.querySelector(`[data-task-row="${taskId}"]`);
+    if (row && origTime) {
+      const slot = row.querySelector('.time-slot');
+      if (slot) slot.textContent = origTime;
+    }
+    renderDynamicTasks();
+    updateAllViews();
+    triggerCloudSyncDebounced();
+    showScheduleChangesModal();
+    showToast('✅ 해당 과제가 원래 기본 위치로 복원되었습니다.');
+  }
+
+  function deleteCustomTask(id) {
+    recordScheduleSnapshot(`추가 과제 삭제`);
+    customTasks = customTasks.filter(t => t.id !== id);
+    const idx = ALL_TASKS.indexOf(id);
+    if (idx !== -1) ALL_TASKS.splice(idx, 1);
+    delete plannerState[id];
+    document.getElementById('custom-task-' + id)?.remove();
+    setLocal('__custom_tasks', JSON.stringify(customTasks));
+    renderDynamicTasks();
+    updateAllViews();
+    triggerCloudSyncDebounced();
+    showScheduleChangesModal();
+    showToast('🗑️ 추가 과제가 삭제되었습니다.');
+  }
+
+  function openTaskEditor(e, taskId) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    currentEditingTaskId = taskId;
+    const modal = document.getElementById('task-editor-modal');
+    const titleEl = document.getElementById('editor-task-title');
+    const descEl = document.getElementById('editor-task-desc');
+    const origEl = document.getElementById('editor-task-orig');
+    const timeInput = document.getElementById('editor-time-input');
+    const specialBox = document.getElementById('editor-special-actions');
+
+    const row = document.querySelector(`[data-task-row="${taskId}"]`);
+    const cb = row ? row.querySelector('input[type="checkbox"]') : null;
+    const currentDay = cb ? cb.getAttribute('data-day-task') : (taskOverrides[taskId]?.toDay || '0924');
+    currentSelectedDay = currentDay;
+
+    const currentSlot = row ? row.querySelector('.time-slot') : null;
+    const currentTime = currentSlot ? currentSlot.textContent.trim() : (taskOverrides[taskId]?.time || '14:00 ~ 15:30');
+    if (timeInput) timeInput.value = currentTime;
+
+    const isCustom = taskId.startsWith('cust_');
+    const origDay = Object.keys(ORIGINAL_DAILY_TASKS).find(d => ORIGINAL_DAILY_TASKS[d].includes(taskId));
+    const details = TASK_DETAILS[taskId] || (isCustom ? customTasks.find(t => t.id === taskId) : { title: taskId, desc: '' });
+
+    if (titleEl) titleEl.innerHTML = `📝 ${escapeHtml(details.title || taskId)}`;
+    if (descEl) descEl.textContent = details.desc || '';
+    if (origEl) {
+      if (origDay) {
+        origEl.textContent = `기본 배정: ${formatDayName(origDay)} (${ORIGINAL_TIMES[taskId] || '자율'})`;
+      } else {
+        origEl.textContent = `AI/사용자 직접 추가된 일정`;
+      }
+    }
+
+    document.querySelectorAll('#editor-day-selector .day-pill-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-day') === currentSelectedDay);
+      btn.onclick = function() {
+        currentSelectedDay = btn.getAttribute('data-day');
+        document.querySelectorAll('#editor-day-selector .day-pill-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      };
+    });
+
+    if (specialBox) {
+      specialBox.innerHTML = '';
+      if (isCustom) {
+        specialBox.innerHTML = `<button type="button" class="tool-btn" style="color:#ef4444;" onclick="deleteCustomTaskFromEditor('${taskId}')">🗑️ 이 과제 삭제</button>`;
+      } else if (taskOverrides[taskId]) {
+        specialBox.innerHTML = `<button type="button" class="tool-btn" style="color:#ef4444;" onclick="resetSingleTaskOverrideFromEditor('${taskId}')">🔄 원래대로</button>`;
+      }
+    }
+
+    modal?.classList.add('open');
+  }
+
+  function closeTaskEditor() {
+    document.getElementById('task-editor-modal')?.classList.remove('open');
+    currentEditingTaskId = null;
+  }
+
+  function closeTaskEditorOnBg(e) {
+    if (e.target.id === 'task-editor-modal') closeTaskEditor();
+  }
+
+  function adjustEditorTime(minutes) {
+    const input = document.getElementById('editor-time-input');
+    if (!input) return;
+    const val = input.value;
+    input.value = val.replace(/(\d{1,2}):(\d{2})/g, (m, h, min) => {
+      let total = parseInt(h, 10) * 60 + parseInt(min, 10) + minutes;
+      if (total < 0) total += 24 * 60;
+      total = total % (24 * 60);
+      return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
+    });
+  }
+
+  function saveTaskEditorChanges() {
+    if (!currentEditingTaskId) return;
+    const taskId = currentEditingTaskId;
+    const newTime = (document.getElementById('editor-time-input').value || '').trim();
+    const targetDay = currentSelectedDay;
+
+    moveTaskToDay(taskId, targetDay, newTime);
+    closeTaskEditor();
+  }
+
+  function deleteCustomTaskFromEditor(taskId) {
+    closeTaskEditor();
+    deleteCustomTask(taskId);
+  }
+
+  function resetSingleTaskOverrideFromEditor(taskId) {
+    closeTaskEditor();
+    resetSingleTaskOverride(taskId);
+  }
+
+  function openAddTaskModal(dayCode) {
+    const modal = document.getElementById('add-task-modal');
+    const dayInput = document.getElementById('add-task-day-val');
+    if (dayInput) dayInput.value = dayCode || '0924';
+    const titleInput = document.getElementById('add-task-title');
+    if (titleInput) titleInput.value = '';
+    modal?.classList.add('open');
+    setTimeout(() => titleInput?.focus(), 100);
+  }
+
+  function closeAddTask() {
+    document.getElementById('add-task-modal')?.classList.remove('open');
+  }
+
+  function closeAddTaskOnBg(e) {
+    if (e.target.id === 'add-task-modal') closeAddTask();
+  }
+
+  function submitManualAddTask() {
+    const day = document.getElementById('add-task-day-val')?.value || '0924';
+    const subject = document.getElementById('add-task-subject')?.value || 'cal1';
+    const title = (document.getElementById('add-task-title')?.value || '').trim();
+    const time = (document.getElementById('add-task-time')?.value || '자율').trim();
+    const desc = (document.getElementById('add-task-desc')?.value || '').trim();
+
+    if (!title) {
+      alert('과제 제목을 입력해주세요!');
+      return;
+    }
+
+    recordScheduleSnapshot(`새 과제 [${title}] 추가`);
+    const newId = 'cust_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+    customTasks.push({
+      id: newId,
+      day: day,
+      subject: subject,
+      time: time,
+      title: title,
+      desc: desc || '직접 추가한 일정',
+      done: false
+    });
+
+    setLocal('__custom_tasks', JSON.stringify(customTasks));
+    closeAddTask();
+    renderDynamicTasks();
+    updateAllViews();
+    triggerCloudSyncDebounced();
+    showToast(`➕ [${formatDayName(day)}]에 새 과제가 추가되었습니다.`);
+  }
+
+  function formatDayName(code) {
+    const map = {
+      '0924': '9/24(목)',
+      '0925': '9/25(금)',
+      '0926': '9/26(토)',
+      '0927': '9/27(일)',
+      '0928': '9/28(월)',
+      '0929': '9/29(화)',
+      '0930': '9/30(수)',
+      '1001': '10/1(목)'
+    };
+    return map[code] || code;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function showToast(text, withUndo = true) {
+    const toast = document.getElementById('study-toast');
+    const txt = document.getElementById('toast-text');
+    const btn = document.getElementById('toast-action-btn');
+    if (!toast || !txt) return;
+
+    txt.textContent = text;
+    if (withUndo && scheduleHistory.length > 0) {
+      btn.style.display = 'inline-block';
+      btn.textContent = '↩️ 되돌리기';
+      btn.onclick = function() {
+        undoLastScheduleAction();
+        toast.classList.remove('show');
+      };
+    } else {
+      btn.style.display = 'none';
+    }
+
+    toast.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 4500);
   }
 
   function getCurrentScheduleSummary() {
@@ -2906,10 +3834,13 @@
 
       let actionsSummary = '';
       if (actions.length > 0) {
+        recordScheduleSnapshot('AI 일정 조정: ' + (text.length > 12 ? text.substring(0, 12) + '...' : text));
+
         actions.forEach(act => {
           if (act.type === 'move_task') {
             taskOverrides[act.taskId] = { toDay: act.toDay, time: act.time };
-            actionsSummary += `<div class="ai-action-badge">✅ 과제 [${act.taskId}] ${act.toDay} 일자로 이동됨 (${act.time || '시간 조정'})</div>`;
+            const details = TASK_DETAILS[act.taskId] || { title: act.taskId };
+            actionsSummary += `<div class="ai-action-badge">✅ [${details.title || act.taskId}] ➔ ${formatDayName(act.toDay)} 이동 (${act.time || '시간 조정'})</div>`;
           } else if (act.type === 'add_task') {
             const newId = 'cust_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
             customTasks.push({
@@ -2921,12 +3852,19 @@
               desc: act.desc || 'AI 추천 맞춤 과제',
               done: false
             });
-            actionsSummary += `<div class="ai-action-badge">➕ [${act.title}] ${act.day} 일자에 추가됨</div>`;
+            actionsSummary += `<div class="ai-action-badge">➕ [${escapeHtml(act.title)}] ${formatDayName(act.day)} 일자에 추가됨</div>`;
           } else if (act.type === 'shift_day') {
             shiftDayTimes(act.day, act.minutes || 60);
-            actionsSummary += `<div class="ai-action-badge">⏰ ${act.day} 일정 ${act.minutes}분 순연 완료</div>`;
+            actionsSummary += `<div class="ai-action-badge">⏰ ${formatDayName(act.day)} 일정 ${act.minutes}분 순연 완료</div>`;
           }
         });
+
+        actionsSummary += `
+          <div style="margin-top: 10px; padding: 8px 12px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <span style="font-size: 0.74rem; color: #ef4444; font-weight: 700;">⚠️ 변경 사항이 마음에 들지 않으신가요?</span>
+            <button class="tool-btn" type="button" onclick="undoLastScheduleAction()" style="font-size: 0.72rem; padding: 3px 8px; color: #ef4444; border-color: #ef4444; font-weight: 800;">↩️ 방금 변경 취소 (롤백)</button>
+          </div>
+        `;
 
         setLocal('__custom_tasks', JSON.stringify(customTasks));
         setLocal('__task_overrides', JSON.stringify(taskOverrides));
@@ -2937,6 +3875,8 @@
         if (typeof confetti === 'function') {
           confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } });
         }
+
+        showToast(`⚡ AI가 일정을 조정했습니다. [↩️ 되돌리기]`, true);
       }
 
       appendChatMessage('ai', `<div>${replyText.replace(/\n/g, '<br>')}</div>${actionsSummary}`);
