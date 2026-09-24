@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>중간고사 직보 맞춤형 초정밀 마스터 대시보드</title>
+  
+  <!-- Pretendard Font & QR Code Lib & Confetti -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #4f46e5;
+      --primary-light: #eef2ff;
+      --cal2-color: #0284c7;
+      --cal2-bg: #f0f9ff;
+      --soc-color: #ea580c;
+      --soc-bg: #fff7ed;
+      --eng-color: #16a34a;
+      --eng-bg: #f0fdf4;
+      --cal1-color: #9333ea;
+      --cal1-bg: #faf5ff;
+      --kor-color: #db2777;
+      --kor-bg: #fdf2f8;
+      --academy-color: #b45309;
+      --academy-bg: #fef3c7;
+      --radius: 14px;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --card-hover: rgba(79, 70, 229, 0.04);
+    }
+
+    [data-theme="dark"] {
+      --bg: #0b0f19;
+      --card-bg: #151d2e;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #243048;
+      --primary: #6366f1;
+      --primary-light: #1e1b4b;
+      --cal2-color: #38bdf8;
+      --cal2-bg: #0c4a6e;
+      --soc-color: #fb923c;
+      --soc-bg: #7c2d12;
+      --eng-color: #4ade80;
+      --eng-bg: #14532d;
+      --cal1-color: #c084fc;
+      --cal1-bg: #581c87;
+      --kor-color: #f472b6;
+      --kor-bg: #831843;
+      --academy-color: #fcd34d;
+      --academy-bg: #78350f;
+      --shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      --card-hover: rgba(255, 255, 255, 0.04);
+    }
+
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      -webkit-tap-highlight-color: transparent; 
+    }
+    
+    body { 
+      background-color: var(--bg); 
+      color: var(--text); 
+      line-height: 1.6; 
+      padding: max(12px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    .container { 
+      max-width: 1180px; 
+      margin: 0 auto; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 16px; 
+      position: relative; 
+    }
+
+    /* Top Sticky Header */
+    .top-bar-sticky { 
+      position: sticky; 
+      top: 8px; 
+      z-index: 100; 
+      background: var(--card-bg);
+      border: 1px solid var(--border); 
+      border-radius: var(--radius); 
+      padding: 12px 16px; 
+      box-shadow: 0 8px 18px -3px rgba(0, 0, 0, 0.08); 
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .progress-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      font-size: 0.95rem; 
+      font-weight: 800; 
+    }
+
+    .progress-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dday-badge {
+      background: linear-gradient(135deg, #ef4444, #f97316);
+      color: #ffffff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: -0.2px;
+      box-shadow: 0 2px 5px rgba(239, 68, 68, 0.3);
+    }
+
+    .progress-bar-bg { 
+      width: 100%; 
+      height: 12px; 
+      background: var(--border); 
+      border-radius: 9999px; 
+      overflow: hidden; 
+      position: relative;
+    }
+
+    .progress-bar-fill { 
+      height: 100%; 
+      width: 6%; 
+      background: linear-gradient(90deg, #4f46e5, #06b6d4); 
+      border-radius: 9999px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+    }
+
+    /* Sticky Action Bar (Sync, Theme, Reset) */
+    .sticky-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 4px;
+      border-top: 1px solid var(--border);
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .sync-status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sync-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      display: inline-block;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+    .sync-dot.syncing {
+      background: #f59e0b;
+      animation: pulse-dot 1s infinite alternate;
+    }
+    .sync-dot.offline {
+      background: #94a3b8;
+    }
+
+    @keyframes pulse-dot {
+      from { transform: scale(0.9); opacity: 0.6; }
+      to { transform: scale(1.3); opacity: 1; }
+    }
+
+    .tool-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tool-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .tool-btn:hover {
+      background: var(--border);
+    }
+    .tool-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* Main Header */
+    header { 
+      background: var(--card-bg); 
+      border: 1px solid var(--border); 
+      border-radius: var(--radius); 
+      padding: 18px 16px; 
+      text-align: center; 
+      box-shadow: var(--shadow); 
+      position: relative;
+    }
+    h1 { 
+      font-size: 1.45rem; 
+      font-weight: 900; 
+      letter-spacing: -0.5px;
+      color: var(--text); 
+      margin-bottom: 6px; 
+    }
+    header p { 
+      color: var(--text-muted); 
+      font-size: 0.86rem; 
+    }
+
+    /* View Switcher Tabs (3 Modes) */
+    .tab-nav { 
+      display: flex; 
+      background: var(--border); 
+      padding: 5px; 
+      border-radius: 12px; 
+      gap: 6px; 
+      width: 100%; 
+    }
+    .tab-btn { 
+      flex: 1; 
+      padding: 10px 8px; 
+      border: none; 
+      background: transparent; 
+      font-size: 0.88rem; 
+      font-weight: 800; 
+      color: var(--text-muted); 
+      border-radius: 8px; 
+      cursor: pointer; 
+      text-align: center; 
+      user-select: none; 
+      touch-action: manipulation; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      gap: 5px;
+      transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .tab-btn.active {
+      background: var(--card-bg); 
+      color: var(--primary); 
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08); 
+    }
+
+    /* Main Content Layouts */
+    .views-wrapper {
+      width: 100%;
+      min-height: 500px;
+    }
+
+    /* Subject Grid (Responsive) */
+    .subject-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); 
+      gap: 16px; 
+      width: 100%; 
+    }
+    .subject-card { 
+      background: var(--card-bg); 
+      border: 1px solid var(--border); 
+      border-radius: var(--radius); 
+      padding: 16px; 
+      box-shadow: var(--shadow); 
+      display: flex; 
+      flex-direction: column; 
+      gap: 12px; 
+      border-top: 5px solid; 
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .subject-card.cal1 { border-top-color: var(--cal1-color); }
+    .subject-card.cal2 { border-top-color: var(--cal2-color); }
+    .subject-card.soc { border-top-color: var(--soc-color); }
+    .subject-card.eng { border-top-color: var(--eng-color); }
+    .subject-card.kor { border-top-color: var(--kor-color); }
+
+    .subj-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .subj-name { font-size: 1.15rem; font-weight: 800; }
+    .subj-exam-day { font-size: 0.78rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+
+    .subj-progress-wrap { display: flex; flex-direction: column; gap: 4px; }
+    .subj-progress-info { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); }
+    .subj-progress-bg { width: 100%; height: 7px; background: var(--border); border-radius: 9999px; overflow: hidden; }
+    .subj-progress-bar { height: 100%; width: 0%; border-radius: 9999px; transition: width 0.35s ease; }
+
+    /* Task Item Rows (Semantic Label for 100% Touch Accuracy) */
+    .task-list { display: flex; flex-direction: column; gap: 8px; }
+    
+    .task-item { 
+      display: flex; 
+      align-items: flex-start; 
+      gap: 12px; 
+      padding: 11px 12px; 
+      border-radius: 10px; 
+      background: var(--bg); 
+      border: 1px solid var(--border); 
+      cursor: pointer; 
+      user-select: none;
+      touch-action: manipulation;
+      min-height: 48px; /* Accessible Mobile Touch Target */
+      transition: background 0.15s ease, border-color 0.15s ease, opacity 0.2s ease;
+    }
+    .task-item:active { 
+      background: var(--card-hover); 
+    }
+    
+    .task-item input[type="checkbox"] { 
+      margin-top: 2px; 
+      width: 20px; 
+      height: 20px; 
+      accent-color: var(--primary); 
+      cursor: pointer; 
+      flex-shrink: 0; 
+      pointer-events: auto;
+    }
+    
+    .task-content { 
+      flex-grow: 1; 
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .task-title { 
+      font-size: 0.88rem; 
+      font-weight: 700; 
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .task-desc { 
+      font-size: 0.77rem; 
+      color: var(--text-muted); 
+      line-height: 1.35;
+    }
+
+    .task-item.done { 
+      opacity: 0.52; 
+      background: var(--border); 
+    }
+    .task-item.done .task-title { 
+      text-decoration: line-through; 
+      color: var(--text-muted);
+    }
+
+    /* Day Card (Daily View) */
+    .daily-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .day-card { 
+      background: var(--card-bg); 
+      border: 1px solid var(--border); 
+      border-radius: var(--radius); 
+      padding: 16px; 
+      box-shadow: var(--shadow); 
+    }
+    
+    .day-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      border-bottom: 2px solid var(--border); 
+      padding-bottom: 10px; 
+      margin-bottom: 10px; 
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .day-title { font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+    .day-study-time { 
+      font-size: 0.78rem; 
+      font-weight: 700; 
+      color: var(--primary); 
+      background: var(--primary-light); 
+      padding: 3px 9px; 
+      border-radius: 999px; 
+    }
+
+    /* Daily Mini Progress Bar (New Feature to solve missing progress visibility!) */
+    .day-progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+      background: var(--bg);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .day-progress-bar-bg {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .day-progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--primary);
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+
+    .time-slot { 
+      font-weight: 700; 
+      font-size: 0.8rem; 
+      color: var(--text-muted); 
+      width: 95px; 
+      flex-shrink: 0; 
+    }
+
+    /* Tags */
+    .tag { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-right: 6px; }
+    .tag-cal2 { background: var(--cal2-bg); color: var(--cal2-color); }
+    .tag-soc { background: var(--soc-bg); color: var(--soc-color); }
+    .tag-eng { background: var(--eng-bg); color: var(--eng-color); }
+    .tag-cal1 { background: var(--cal1-bg); color: var(--cal1-color); }
+    .tag-kor { background: var(--kor-bg); color: var(--kor-color); }
+    .tag-academy { background: var(--academy-bg); color: var(--academy-color); }
+    .tag-rest { background: var(--border); color: var(--text-muted); }
+
+    /* Dual Split View for Tablets/iPads/Laptops (New Feature!) */
+    .dual-view-container {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .dual-left-col {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .dual-right-col {
+      position: sticky;
+      top: 155px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: calc(100vh - 170px);
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .dual-right-col::-webkit-scrollbar {
+      width: 5px;
+    }
+    .dual-right-col::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 10px;
+    }
+
+    /* Modal / Popups */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 480px;
+      padding: 22px 20px;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      animation: modal-pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes modal-pop {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-close {
+      cursor: pointer;
+      font-size: 1.3rem;
+      color: var(--text-muted);
+      border: none;
+      background: transparent;
+      padding: 4px;
+    }
+    .sync-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .sync-input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      outline: none;
+    }
+    .sync-input:focus {
+      border-color: var(--primary);
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-secondary {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    #qrcode-canvas {
+      margin: 10px auto;
+      display: flex;
+      justify-content: center;
+      padding: 10px;
+      background: #ffffff;
+      border-radius: 10px;
+    }
+
+    /* Responsive Queries */
+    @media (max-width: 820px) {
+      .dual-view-container {
+        grid-template-columns: 1fr;
+      }
+      .dual-right-col {
+        position: static;
+        max-height: none;
+      }
+      .tab-btn.tablet-only {
+        display: none !important;
+      }
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 8px 6px; }
+      h1 { font-size: 1.25rem; }
+      .task-item { padding: 9px 10px; gap: 8px; }
+      .time-slot { width: 100%; margin-bottom: 2px; }
+      .day-card .task-item { flex-direction: column; gap: 4px; }
+      .day-card .task-item.has-cb { flex-direction: row; align-items: flex-start; }
+      .top-bar-sticky { padding: 10px 12px; }
+      .progress-header { font-size: 0.88rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Sticky Overall Progress & Sync Status Bar -->
+  <div class="top-bar-sticky">
+    <div class="progress-header">
+      <div class="progress-title-wrap">
+        <span>🔥 전체 목표 달성률</span>
+        <span class="dday-badge" id="dday-badge">D-5</span>
+      </div>
+      <span id="progress-text">2 / 31 완료 (6%)</span>
+    </div>
+    
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-bar" style="width: 6%;"></div>
+    </div>
+
+    <!-- Quick Utilities: Sync status, Theme switch, Device Pairing -->
+    <div class="sticky-actions">
+      <div class="sync-status-indicator" onclick="openSyncModal()" title="기기 간 동기화 설정">
+        <span class="sync-dot" id="sync-dot"></span>
+        <span id="sync-text">동기화: 로컬 저장됨</span>
+      </div>
+
+      <div class="tool-btn-group">
+        <button class="tool-btn" onclick="openSyncModal()" title="폰/아이패드/PC 연동">
+          📱 폰/패드 동기화
+        </button>
+        <button class="tool-btn" onclick="toggleTheme()" id="theme-btn" title="다크/라이트 모드">
+          🌙 야간 모드
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <h1>중간고사 초단기 마스터 대시보드</h1>
+    <p>9/24(목) ~ 10/2(금) | 직보 상세 시간표 및 플래너 노트 100% 반영</p>
+  </header>
+
+  <!-- View Switcher Tabs -->
+  <div class="tab-nav">
+    <button class="tab-btn active" id="btn-tab-subj" onclick="switchView('subject')">
+      📊 과목별 모아보기
+    </button>
+    <button class="tab-btn" id="btn-tab-daily" onclick="switchView('daily')">
+      ⏰ 일자별 타임테이블
+    </button>
+    <button class="tab-btn tablet-only" id="btn-tab-dual" onclick="switchView('dual')">
+      💻📱 듀얼 뷰 (태블릿/PC)
+    </button>
+  </div>
+
+  <!-- VIEWS WRAPPER -->
+  <div class="views-wrapper">
+    
+    <!-- 1. SUBJECT VIEW -->
+    <div id="view-subject" class="subject-grid">
+      
+      <!-- 1. 미적분 I -->
+      <div class="subject-card cal1">
+        <div class="subj-header">
+          <div>
+            <div class="subj-name" style="color:var(--cal1-color);">미적분 Ⅰ</div>
+            <div class="task-desc">총 22문항 (선택18/단답2/논술2)</div>
+          </div>
+          <span class="subj-exam-day" style="background:var(--cal1-bg); color:var(--cal1-color);">9/29(화) 1교시</span>
+        </div>
+        <div class="subj-progress-wrap">
+          <div class="subj-progress-info">
+            <span>과목 달성률</span>
+            <span class="subj-pct" data-group="cal1">33%</span>
+          </div>
+          <div class="subj-progress-bg">
+            <div class="subj-progress-bar" data-group="cal1" style="background:var(--cal1-color); width: 33%;"></div>
+          </div>
+        </div>
+        <div class="task-list">
+          <label class="task-item done">
+            <input type="checkbox" checked disabled data-group="cal1">
+            <div class="task-content">
+              <div class="task-title">서현고 프린트 2회 회독 (완료)</div>
+              <div class="task-desc">노트 체크 완료 (1, 2)</div>
+            </div>
+          </label>
+          <label class="task-item done">
+            <input type="checkbox" checked disabled data-group="cal1">
+            <div class="task-content">
+              <div class="task-title">수특 변형 1회차 풀이 (완료)</div>
+              <div class="task-desc">노트 체크 완료</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="c1_1">
+            <input type="checkbox" data-task="c1_1" data-group="cal1">
+            <div class="task-content">
+              <div class="task-title">서현고 프린트 변형 (선별 2h)</div>
+              <div class="task-desc">9/24(목) 22:00 선별 풀이</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="c1_2">
+            <input type="checkbox" data-task="c1_2" data-group="cal1">
+            <div class="task-content">
+              <div class="task-title">수특 변형 2회차 풀이 (3h)</div>
+              <div class="task-desc">9/27(일) 06:30 오전 타임어택 풀이</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="c1_3">
+            <input type="checkbox" data-task="c1_3" data-group="cal1">
+            <div class="task-content">
+              <div class="task-title">수학 직보: 수특 원본 &amp; 프린트 원본 전수 풀이</div>
+              <div class="task-desc">9/28(월) 방과 후 ~ 22:00 학원에서 완벽 클리어</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="c1_4">
+            <input type="checkbox" data-task="c1_4" data-group="cal1">
+            <div class="task-content">
+              <div class="task-title">수특/프린트 직보 오답 &amp; 교과서(?) 확인 (1.5h)</div>
+              <div class="task-desc">9/28(월) 22:30 귀가 후 직전 최종 점검</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 2. 화법과 언어 -->
+      <div class="subject-card kor">
+        <div class="subj-header">
+          <div>
+            <div class="subj-name" style="color:var(--kor-color);">화법과 언어</div>
+            <div class="task-desc">총 24문항 (선택21/논술3)</div>
+          </div>
+          <span class="subj-exam-day" style="background:var(--kor-bg); color:var(--kor-color);">9/30(수) 1교시</span>
+        </div>
+        <div class="subj-progress-wrap">
+          <div class="subj-progress-info">
+            <span>과목 달성률</span>
+            <span class="subj-pct" data-group="kor">0%</span>
+          </div>
+          <div class="subj-progress-bg">
+            <div class="subj-progress-bar" data-group="kor" style="background:var(--kor-color); width: 0%;"></div>
+          </div>
+        </div>
+        <div class="task-list">
+          <label class="task-item" data-task-row="k_1">
+            <input type="checkbox" data-task="k_1" data-group="kor">
+            <div class="task-content">
+              <div class="task-title">Part 2 개념 회독 + 문풀 (4h)</div>
+              <div class="task-desc">9/25(금) 추석 오전 격파</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="k_2">
+            <input type="checkbox" data-task="k_2" data-group="kor">
+            <div class="task-content">
+              <div class="task-title">Part 3 개념 회독 + 문풀 (4h)</div>
+              <div class="task-desc">9/25(금) 추석 야간 격파</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="k_3">
+            <input type="checkbox" data-task="k_3" data-group="kor">
+            <div class="task-content">
+              <div class="task-title">Part 4 개념 회독 + 문풀 (4h)</div>
+              <div class="task-desc">9/26(토) 추석 오전 격파 (본교재 전원 완주!)</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="k_4">
+            <input type="checkbox" data-task="k_4" data-group="kor">
+            <div class="task-content">
+              <div class="task-title">기출문제 1·2·3 풀이 (2h)</div>
+              <div class="task-desc">9/26(토) 논술형 키워드 암기</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="k_5">
+            <input type="checkbox" data-task="k_5" data-group="kor">
+            <div class="task-content">
+              <div class="task-title">직전 60문제 &amp; 학교 변형 풀이 (3h)</div>
+              <div class="task-desc">9/29(화) 11:30 낮 자습 블록에서 사전 격파</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="k_6">
+            <input type="checkbox" data-task="k_6" data-group="kor">
+            <div class="task-content">
+              <div class="task-title">국어 필수 직보 참석 (18:30 ~ 22:00)</div>
+              <div class="task-desc">9/29(화) 필수 직보 완료 후 사문 정리를 위해 귀가</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 3. 사회·문화 -->
+      <div class="subject-card soc">
+        <div class="subj-header">
+          <div>
+            <div class="subj-name" style="color:var(--soc-color);">사회·문화</div>
+            <div class="task-desc">선택형 25문항 (논술형 0)</div>
+          </div>
+          <span class="subj-exam-day" style="background:var(--soc-bg); color:var(--soc-color);">9/30(수) 2교시</span>
+        </div>
+        <div class="subj-progress-wrap">
+          <div class="subj-progress-info">
+            <span>과목 달성률</span>
+            <span class="subj-pct" data-group="soc">0%</span>
+          </div>
+          <div class="subj-progress-bg">
+            <div class="subj-progress-bar" data-group="soc" style="background:var(--soc-color); width: 0%;"></div>
+          </div>
+        </div>
+        <div class="task-list">
+          <label class="task-item" data-task-row="s_1">
+            <input type="checkbox" data-task="s_1" data-group="soc">
+            <div class="task-content">
+              <div class="task-title">4주차 ②, ③ 완강 및 문풀 (2.5h)</div>
+              <div class="task-desc">9/24(목) 19:30 저녁 블록</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="s_2">
+            <input type="checkbox" data-task="s_2" data-group="soc">
+            <div class="task-content">
+              <div class="task-title">5주차 1·2·3 완강 및 문풀 (4h)</div>
+              <div class="task-desc">9/25(금) 인강 3h + 정리·엔제프 1h</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="s_3">
+            <input type="checkbox" data-task="s_3" data-group="soc">
+            <div class="task-content">
+              <div class="task-title">6주차 1·2·3 완강 및 문풀 (4h)</div>
+              <div class="task-desc">9/26(토) 인강 3h + 정리·엔제프 1h</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="s_4_1">
+            <input type="checkbox" data-task="s_4_1" data-group="soc">
+            <div class="task-content">
+              <div class="task-title">7주차 1·2·3 인강 수강 (3h)</div>
+              <div class="task-desc">9/27(일) 학원 가기 전 인강 완강</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="s_4_2">
+            <input type="checkbox" data-task="s_4_2" data-group="soc">
+            <div class="task-content">
+              <div class="task-title">7주차 정리 &amp; 문풀 (1h)</div>
+              <div class="task-desc">9/27(일) 밤 완주 (개념 100% 종료!)</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="s_5">
+            <input type="checkbox" data-task="s_5" data-group="soc">
+            <div class="task-content">
+              <div class="task-title">개념완성 훑기 (학교프린트) (2h)</div>
+              <div class="task-desc">9/27(일) 밤 본문 정독 및 자료 분석</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="s_6">
+            <input type="checkbox" data-task="s_6" data-group="soc">
+            <div class="task-content">
+              <div class="task-title">수특 훑기 &amp; 교과서 훑기 1차 (3h)</div>
+              <div class="task-desc">9/29(화) 14:30 국어 직보 전 집중 회독</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="s_7">
+            <input type="checkbox" data-task="s_7" data-group="soc">
+            <div class="task-content">
+              <div class="task-title">교과서/프린트 최종 암기 (1.5h)</div>
+              <div class="task-desc">9/29(화) 22:30 국어 직보 귀가 후 취침 전 마무리</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 4. 영어 II -->
+      <div class="subject-card eng">
+        <div class="subj-header">
+          <div>
+            <div class="subj-name" style="color:var(--eng-color);">영어 Ⅱ</div>
+            <div class="task-desc">총 26문항 (선택24/논술2)</div>
+          </div>
+          <span class="subj-exam-day" style="background:var(--eng-bg); color:var(--eng-color);">10/1(목) 1교시</span>
+        </div>
+        <div class="subj-progress-wrap">
+          <div class="subj-progress-info">
+            <span>과목 달성률</span>
+            <span class="subj-pct" data-group="eng">0%</span>
+          </div>
+          <div class="subj-progress-bg">
+            <div class="subj-progress-bar" data-group="eng" style="background:var(--eng-color); width: 0%;"></div>
+          </div>
+        </div>
+        <div class="task-list">
+          <label class="task-item" data-task-row="e_1">
+            <input type="checkbox" data-task="e_1" data-group="eng">
+            <div class="task-content">
+              <div class="task-title">모고 6지문 분석 (2.5h)</div>
+              <div class="task-desc">9/25(금) 21, 30, 34, 37, 38, 41~42 완벽 분석</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="e_2">
+            <input type="checkbox" data-task="e_2" data-group="eng">
+            <div class="task-content">
+              <div class="task-title">해커스 문풀 5회 &amp; 6회 (3h)</div>
+              <div class="task-desc">9/26(토) 시간 재고 풀이 및 오답</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="e_3">
+            <input type="checkbox" data-task="e_3" data-group="eng">
+            <div class="task-content">
+              <div class="task-title">모의고사 6지문 문풀 (3h)</div>
+              <div class="task-desc">9/30(수) 13:00 귀가 직후 변형 문풀</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="e_4">
+            <input type="checkbox" data-task="e_4" data-group="eng">
+            <div class="task-content">
+              <div class="task-title">교과서 문풀 1차 (1.5h)</div>
+              <div class="task-desc">9/30(수) 16:00 영어 직보 가기 전 풀이</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="e_5">
+            <input type="checkbox" data-task="e_5" data-group="eng">
+            <div class="task-content">
+              <div class="task-title">영어 직보 참석 (18:00 ~ 20:00)</div>
+              <div class="task-desc">9/30(수) 핵심 변형 포인트 및 직보 자료 확인</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="e_6">
+            <input type="checkbox" data-task="e_6" data-group="eng">
+            <div class="task-content">
+              <div class="task-title">교과서 잔여/오답 &amp; 서술 15문장 (3h)</div>
+              <div class="task-desc">9/30(수) 21:00 직보 귀가 후 서술형 암기 및 정리</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 5. 미적분 II -->
+      <div class="subject-card cal2">
+        <div class="subj-header">
+          <div>
+            <div class="subj-name" style="color:var(--cal2-color);">미적분 Ⅱ</div>
+            <div class="task-desc">총 20문항 (선택18/논술2)</div>
+          </div>
+          <span class="subj-exam-day" style="background:var(--cal2-bg); color:var(--cal2-color);">10/2(금) 1교시</span>
+        </div>
+        <div class="subj-progress-wrap">
+          <div class="subj-progress-info">
+            <span>과목 달성률</span>
+            <span class="subj-pct" data-group="cal2">0%</span>
+          </div>
+          <div class="subj-progress-bg">
+            <div class="subj-progress-bar" data-group="cal2" style="background:var(--cal2-color); width: 0%;"></div>
+          </div>
+        </div>
+        <div class="task-list">
+          <label class="task-item" data-task-row="c2_1">
+            <input type="checkbox" data-task="c2_1" data-group="cal2">
+            <div class="task-content">
+              <div class="task-title">몫·합성함수 미분법 개념 (2h)</div>
+              <div class="task-desc">9/24(목) 16:30 도함수 공식 완벽 암기</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="c2_2">
+            <input type="checkbox" data-task="c2_2" data-group="cal2">
+            <div class="task-content">
+              <div class="task-title">수열 수특 풀이 (1.5h)</div>
+              <div class="task-desc">9/26(토) 22:30 예제/유제/Level 1·2</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="c2_3">
+            <input type="checkbox" data-task="c2_3" data-group="cal2">
+            <div class="task-content">
+              <div class="task-title">도함수 공식 백지 암기 &amp; 예습 (2h)</div>
+              <div class="task-desc">10/1(목) 11:00 직보 가기 전 공식 총정리</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="c2_4">
+            <input type="checkbox" data-task="c2_4" data-group="cal2">
+            <div class="task-content">
+              <div class="task-title">미적2 직보: 교과서 &amp; 수특 전 범위 올클리어!</div>
+              <div class="task-desc">10/1(목) 14:00 ~ 19:30 학원에서 교과서/수특 전수 풀이</div>
+            </div>
+          </label>
+          <label class="task-item" data-task-row="c2_5">
+            <input type="checkbox" data-task="c2_5" data-group="cal2">
+            <div class="task-content">
+              <div class="task-title">직보 오답 재풀이 &amp; 서술형 공식 암기 (3.5h)</div>
+              <div class="task-desc">10/1(목) 20:30 틀린 문제 재확인 후 00:00 취침</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 2. DAILY TIMETABLE VIEW -->
+    <div id="view-daily" class="daily-container" style="display: none;">
+      
+      <!-- 9/24 목 -->
+      <div class="day-card" data-day="0924">
+        <div class="day-header">
+          <div class="day-title">📌 9/24 (목) 오늘 저녁 루틴</div>
+          <div class="day-study-time">순공 6.5시간 확보</div>
+        </div>
+        <div class="day-progress-wrap">
+          <span>당일 진도:</span>
+          <div class="day-progress-bar-bg">
+            <div class="day-progress-bar-fill" data-day-bar="0924"></div>
+          </div>
+          <span data-day-text="0924">0 / 3 완료 (0%)</span>
+        </div>
+        <div class="task-list">
+          <label class="task-item has-cb" data-task-row="c2_1">
+            <input type="checkbox" data-task="c2_1" data-day-task="0924">
+            <span class="time-slot">16:30 ~ 18:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-cal2">미적2</span>몫의 미분법 &amp; 합성함수 미분 개념 (2h)</div>
+              <div class="task-desc">인강 완강 후 도함수 공식 완벽 암기</div>
+            </div>
+          </label>
+          <div class="task-item" style="cursor:default; background:var(--bg);">
+            <span class="time-slot">18:30 ~ 19:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-rest">휴식</span>저녁 식사 및 휴식 (1h)</div>
+            </div>
+          </div>
+          <label class="task-item has-cb" data-task-row="s_1">
+            <input type="checkbox" data-task="s_1" data-day-task="0924">
+            <span class="time-slot">19:30 ~ 22:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-soc">사문</span>4주차 ②, ③ 완료 (2.5h)</div>
+              <div class="task-desc">인강 수강 + 엔제프/정리 문풀 완수</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="c1_1">
+            <input type="checkbox" data-task="c1_1" data-day-task="0924">
+            <span class="time-slot">22:00 ~ 24:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-cal1">미적1</span>서현고 프린트 변형 선별 풀이 (2h)</div>
+              <div class="task-desc">중요 문항 선별 풀이 후 00:00 취침</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 9/25 금 (추석 1일차) -->
+      <div class="day-card" data-day="0925">
+        <div class="day-header">
+          <div class="day-title">🌕 9/25 (금) 추석 1일차 - 대량 분량 격파</div>
+          <div class="day-study-time">순공 14.5시간 몰입</div>
+        </div>
+        <div class="day-progress-wrap">
+          <span>당일 진도:</span>
+          <div class="day-progress-bar-bg">
+            <div class="day-progress-bar-fill" data-day-bar="0925"></div>
+          </div>
+          <span data-day-text="0925">0 / 4 완료 (0%)</span>
+        </div>
+        <div class="task-list">
+          <label class="task-item has-cb" data-task-row="k_1">
+            <input type="checkbox" data-task="k_1" data-day-task="0925">
+            <span class="time-slot">06:30 ~ 10:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-kor">화언</span>Part 2 개념 회독 + 문풀 (4h)</div>
+              <div class="task-desc">문법 개념 총정리 후 수록 문제 전수 풀이</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="e_1">
+            <input type="checkbox" data-task="e_1" data-day-task="0925">
+            <span class="time-slot">11:30 ~ 14:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-eng">영어</span>모의고사 6지문 분석 (2.5h)</div>
+              <div class="task-desc">21, 30, 34, 37, 38, 41~42번 구문 분석 및 주제 정리</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="s_2">
+            <input type="checkbox" data-task="s_2" data-day-task="0925">
+            <span class="time-slot">15:00 ~ 19:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-soc">사문</span>5주차 1·2·3 완료 (4h)</div>
+              <div class="task-desc">인강 3h + 개념 정리 및 엔제프 문풀 1h</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="k_2">
+            <input type="checkbox" data-task="k_2" data-day-task="0925">
+            <span class="time-slot">20:00 ~ 24:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-kor">화언</span>Part 3 개념 회독 + 문풀 (4h)</div>
+              <div class="task-desc">단원 개념 인출 및 오답 체크 후 00:00 취침</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 9/26 토 (추석 2일차) -->
+      <div class="day-card" data-day="0926">
+        <div class="day-header">
+          <div class="day-title">🌕 9/26 (토) 추석 2일차 - 화언 완주 &amp; 사문 돌파</div>
+          <div class="day-study-time">순공 14.5시간 몰입</div>
+        </div>
+        <div class="day-progress-wrap">
+          <span>당일 진도:</span>
+          <div class="day-progress-bar-bg">
+            <div class="day-progress-bar-fill" data-day-bar="0926"></div>
+          </div>
+          <span data-day-text="0926">0 / 5 완료 (0%)</span>
+        </div>
+        <div class="task-list">
+          <label class="task-item has-cb" data-task-row="k_3">
+            <input type="checkbox" data-task="k_3" data-day-task="0926">
+            <span class="time-slot">06:30 ~ 10:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-kor">화언</span>Part 4 개념 회독 + 문풀 (4h)</div>
+              <div class="task-desc">★ 화언 Part 2, 3, 4 본교재 전원 완주!</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="e_2">
+            <input type="checkbox" data-task="e_2" data-day-task="0926">
+            <span class="time-slot">11:30 ~ 14:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-eng">영어</span>해커스 문풀 5회 &amp; 6회 (3h)</div>
+              <div class="task-desc">5회 (1.5h) + 6회 (1.5h) 시간 재고 풀이 및 오답</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="s_3">
+            <input type="checkbox" data-task="s_3" data-day-task="0926">
+            <span class="time-slot">15:30 ~ 19:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-soc">사문</span>6주차 1·2·3 완료 (4h)</div>
+              <div class="task-desc">인강 3h + 핵심 키워드 정리 및 문풀 1h</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="k_4">
+            <input type="checkbox" data-task="k_4" data-day-task="0926">
+            <span class="time-slot">20:30 ~ 22:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-kor">화언</span>기출문제 1·2·3 풀이 (2h)</div>
+              <div class="task-desc">논술형 답안 키워드 표준 용어 암기</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="c2_2">
+            <input type="checkbox" data-task="c2_2" data-day-task="0926">
+            <span class="time-slot">22:30 ~ 24:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-cal2">미적2</span>수열 수특 풀이 (1.5h)</div>
+              <div class="task-desc">예제·유제·Level 1~2 풀이 후 00:00 취침</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 9/27 일 -->
+      <div class="day-card" data-day="0927">
+        <div class="day-header">
+          <div class="day-title">⚡ 9/27 (일) 학원(14~20시) 전후 자습 블록</div>
+          <div class="day-study-time">순공 8.5시간 확보</div>
+        </div>
+        <div class="day-progress-wrap">
+          <span>당일 진도:</span>
+          <div class="day-progress-bar-bg">
+            <div class="day-progress-bar-fill" data-day-bar="0927"></div>
+          </div>
+          <span data-day-text="0927">0 / 4 완료 (0%)</span>
+        </div>
+        <div class="task-list">
+          <label class="task-item has-cb" data-task-row="c1_2">
+            <input type="checkbox" data-task="c1_2" data-day-task="0927">
+            <span class="time-slot">06:30 ~ 09:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-cal1">미적1</span>수특 변형 2회차 풀이 (3h)</div>
+              <div class="task-desc">서현고 출제 포인트 집중 타임어택 풀이</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="s_4_1">
+            <input type="checkbox" data-task="s_4_1" data-day-task="0927">
+            <span class="time-slot">10:30 ~ 13:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-soc">사문</span>7주차 1·2·3 인강 수강 (3h)</div>
+              <div class="task-desc">학원 가기 전 인강 완강 완료</div>
+            </div>
+          </label>
+          <div class="task-item" style="cursor:default; background:var(--primary-light);">
+            <span class="time-slot">14:00 ~ 20:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag" style="background:var(--primary); color:#fff;">학원</span>수학·영어 정규 학원 수업</div>
+            </div>
+          </div>
+          <label class="task-item has-cb" data-task-row="s_4_2">
+            <input type="checkbox" data-task="s_4_2" data-day-task="0927">
+            <span class="time-slot">21:00 ~ 22:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-soc">사문</span>7주차 정리 &amp; 문풀 (1h)</div>
+              <div class="task-desc">★ 개념에센스 4~7주차 전원 완강!</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="s_5">
+            <input type="checkbox" data-task="s_5" data-day-task="0927">
+            <span class="time-slot">22:00 ~ 24:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-soc">사문</span>개념완성 훑기 (2h)</div>
+              <div class="task-desc">학교프린트 본문 정독 및 1~3단원 자료 정복 후 취침</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 9/28 월 (미적1 직보 D-1) -->
+      <div class="day-card" data-day="0928">
+        <div class="day-header">
+          <div class="day-title">🔥 9/28 (월) 미적분Ⅰ D-1 (직보 올인)</div>
+          <div class="day-study-time">직보 후 야간 1.5h 점검</div>
+        </div>
+        <div class="day-progress-wrap">
+          <span>당일 진도:</span>
+          <div class="day-progress-bar-bg">
+            <div class="day-progress-bar-fill" data-day-bar="0928"></div>
+          </div>
+          <span data-day-text="0928">0 / 2 완료 (0%)</span>
+        </div>
+        <div class="task-list">
+          <label class="task-item has-cb" data-task-row="c1_3">
+            <input type="checkbox" data-task="c1_3" data-day-task="0928">
+            <span class="time-slot">방과 후 ~ 22:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-academy">수학 직보</span>미적1 수특 원본 &amp; 서현고 프린트 원본 전수 풀이</div>
+              <div class="task-desc">학원에서 원본 2종 완벽 클리어 후 22:00 귀가</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="c1_4">
+            <input type="checkbox" data-task="c1_4" data-day-task="0928">
+            <span class="time-slot">22:30 ~ 24:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-cal1">미적1</span>직보 오답 정리 &amp; 교과서(?) 확인 (1.5h)</div>
+              <div class="task-desc">교과서 대단원/생각넓히기 서술형 풀이 최종 점검 후 00:00 취침</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 9/29 화 (화언/사문 직보 D-1) -->
+      <div class="day-card" data-day="0929">
+        <div class="day-header">
+          <div class="day-title">🔥 9/29 (화) 화언 &amp; 사문 D-1 (국어 직보 18:30~22:00)</div>
+          <div class="day-study-time">낮 6h + 직보 3.5h + 밤 1.5h</div>
+        </div>
+        <div class="day-progress-wrap">
+          <span>당일 진도:</span>
+          <div class="day-progress-bar-bg">
+            <div class="day-progress-bar-fill" data-day-bar="0929"></div>
+          </div>
+          <span data-day-text="0929">0 / 4 완료 (0%)</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item" style="cursor:default; background:var(--kor-bg);">
+            <span class="time-slot">09:10 ~ 10:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-cal1">시험</span>1교시 미적분Ⅰ 시험 응시 &amp; 귀가 (10:30)</div>
+            </div>
+          </div>
+          <label class="task-item has-cb" data-task-row="k_5">
+            <input type="checkbox" data-task="k_5" data-day-task="0929">
+            <span class="time-slot">11:30 ~ 14:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-kor">화언</span>직전 60문제 &amp; 학교 변형 풀이 (3h)</div>
+              <div class="task-desc">국어 직보 가기 전 실전 타임어택 사전 완수</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="s_6">
+            <input type="checkbox" data-task="s_6" data-day-task="0929">
+            <span class="time-slot">14:30 ~ 17:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-soc">사문</span>수특 훑기 &amp; 교과서 훑기 1차 (3h)</div>
+              <div class="task-desc">선지 OX 및 핵심 표·도표 제시문 집중 확인</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="k_6">
+            <input type="checkbox" data-task="k_6" data-day-task="0929">
+            <span class="time-slot">18:30 ~ 22:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-academy">국어 직보</span>화법과 언어 필수 직보 참석</div>
+              <div class="task-desc">필수 시간 종료 즉시 귀가 (사문 마무리를 위해 잔류 안 함)</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="s_7">
+            <input type="checkbox" data-task="s_7" data-day-task="0929">
+            <span class="time-slot">22:30 ~ 24:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-soc">사문</span>교과서/프린트 최종 암기 (1.5h)</div>
+              <div class="task-desc">선생님 필기 및 날개 해설 최종 회독 후 00:00 취침</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 9/30 수 (영어 직보 D-1) -->
+      <div class="day-card" data-day="0930">
+        <div class="day-header">
+          <div class="day-title">🔥 9/30 (수) 영어Ⅱ D-1 (영어 직보 18:00~20:00)</div>
+          <div class="day-study-time">낮 4.5h + 직보 2h + 밤 3h</div>
+        </div>
+        <div class="day-progress-wrap">
+          <span>당일 진도:</span>
+          <div class="day-progress-bar-bg">
+            <div class="day-progress-bar-fill" data-day-bar="0930"></div>
+          </div>
+          <span data-day-text="0930">0 / 4 완료 (0%)</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item" style="cursor:default; background:var(--eng-bg);">
+            <span class="time-slot">09:10 ~ 11:10</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-kor">시험</span>1교시 화언 / 2교시 사문 시험 응시 &amp; 귀가 (12:00)</div>
+            </div>
+          </div>
+          <label class="task-item has-cb" data-task-row="e_3">
+            <input type="checkbox" data-task="e_3" data-day-task="0930">
+            <span class="time-slot">13:00 ~ 16:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-eng">영어</span>모의고사 6지문 문풀 (3h)</div>
+              <div class="task-desc">변형문제(어법·빈칸·순서) 전수 풀이</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="e_4">
+            <input type="checkbox" data-task="e_4" data-day-task="0930">
+            <span class="time-slot">16:00 ~ 17:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-eng">영어</span>교과서 문풀 1차 (1.5h)</div>
+              <div class="task-desc">Lesson 1 본문 변형문제 집중 풀이</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="e_5">
+            <input type="checkbox" data-task="e_5" data-day-task="0930">
+            <span class="time-slot">18:00 ~ 20:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-academy">영어 직보</span>영어Ⅱ 직전 보강 참석</div>
+              <div class="task-desc">직보 자료 및 핵심 변형 포인트 정리 후 20:00 귀가</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="e_6">
+            <input type="checkbox" data-task="e_6" data-day-task="0930">
+            <span class="time-slot">21:00 ~ 24:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-eng">영어</span>교과서 잔여/오답 &amp; 서술 15문장 (3h)</div>
+              <div class="task-desc">해커스 오답 + 서술형 핵심 15문장 통암기 후 00:00 취침</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- 10/1 목 (미적2 직보 D-1 결전) -->
+      <div class="day-card" data-day="1001">
+        <div class="day-header">
+          <div class="day-title">👑 10/1 (목) 미적분Ⅱ D-1 (수학 직보 14:00~19:30)</div>
+          <div class="day-study-time">오전 2h + 직보 5.5h + 밤 3.5h</div>
+        </div>
+        <div class="day-progress-wrap">
+          <span>당일 진도:</span>
+          <div class="day-progress-bar-bg">
+            <div class="day-progress-bar-fill" data-day-bar="1001"></div>
+          </div>
+          <span data-day-text="1001">0 / 3 완료 (0%)</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item" style="cursor:default; background:var(--cal2-bg);">
+            <span class="time-slot">09:10 ~ 10:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-eng">시험</span>1교시 영어Ⅱ 시험 응시 &amp; 귀가 (10:30)</div>
+            </div>
+          </div>
+          <label class="task-item has-cb" data-task-row="c2_3">
+            <input type="checkbox" data-task="c2_3" data-day-task="1001">
+            <span class="time-slot">11:00 ~ 13:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-cal2">미적2</span>도함수 공식 백지 암기 &amp; 취약 예습 (2h)</div>
+              <div class="task-desc">직보 가기 전 삼각·지수로그·몫·합성 공식 총정리</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="c2_4">
+            <input type="checkbox" data-task="c2_4" data-day-task="1001">
+            <span class="time-slot">14:00 ~ 19:30</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-academy">수학 직보</span>미적2 교과서 &amp; 수특 전 범위 올클리어!</div>
+              <div class="task-desc">학원에서 교과서 전 문항 + 수특 전 문항 완벽 풀이 후 귀가</div>
+            </div>
+          </label>
+          <label class="task-item has-cb" data-task-row="c2_5">
+            <input type="checkbox" data-task="c2_5" data-day-task="1001">
+            <span class="time-slot">20:30 ~ 24:00</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-cal2">미적2</span>직보 오답 재풀이 &amp; 서술형 공식 암기 (3.5h)</div>
+              <div class="task-desc">학원에서 틀렸던 문제 재점검 후 00:00 취침 ➔ 10/2(금) 만점 달성!</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. DUAL SPLIT VIEW (For iPad/Tablets/Laptops) -->
+    <div id="view-dual" class="dual-view-container" style="display: none;">
+      <div class="dual-left-col" id="dual-left-target">
+        <!-- Daily Timetable cloned dynamically -->
+      </div>
+      <div class="dual-right-col" id="dual-right-target">
+        <!-- Subject Cards cloned dynamically -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DEVICE SYNC & SHARING MODAL -->
+<div class="modal-overlay" id="sync-modal" onclick="closeSyncModalOnBg(event)">
+  <div class="modal-card">
+    <div class="modal-title">
+      <span>📱 폰 ↔ 패드 ↔ PC 실시간 동기화</span>
+      <button class="modal-close" onclick="closeSyncModal()">&times;</button>
+    </div>
+    
+    <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+      서로 다른 기기(스마트폰, 아이패드, 노트북)에서 <strong>동일한 동기화 코드(PIN)</strong>를 입력하면 실시간으로 진행률과 체크 상태가 자동 연동됩니다.
+    </p>
+
+    <!-- Cloud Sync PIN Section -->
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <label style="font-size: 0.82rem; font-weight: 800;">나만의 동기화 코드 (PIN)</label>
+      <div class="sync-input-row">
+        <input type="text" id="sync-room-input" class="sync-input" placeholder="예: MY-EXAM-77" maxlength="30">
+        <button class="btn-primary" onclick="applySyncCode()">코드 연결</button>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <button class="btn-secondary" style="flex:1;" onclick="pushToCloud(true)">☁️ 지금 클라우드로 백업</button>
+      <button class="btn-secondary" style="flex:1;" onclick="pullFromCloud(true)">📥 클라우드에서 가져오기</button>
+    </div>
+
+    <!-- QR Code Scan Instant Sharing -->
+    <div style="border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; align-items: center;">
+      <span style="font-size: 0.82rem; font-weight: 800;">📷 QR 코드로 다른 기기에서 즉시 열기</span>
+      <div id="qrcode-canvas"></div>
+      <span style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">
+        폰이나 패드의 기본 카메라로 QR을 스캔하면 현재 상태 그대로 즉시 열립니다!
+      </span>
+      <button class="tool-btn" style="width: 100%; justify-content: center; padding: 8px;" onclick="copyShareLink()">
+        📋 현재 상태 동기화 링크 복사
+      </button>
+    </div>
+
+    <!-- Data Reset -->
+    <div style="border-top: 1px solid var(--border); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 0.75rem; color: var(--text-muted);">전체 체크 초기화</span>
+      <button class="tool-btn" style="color: #ef4444;" onclick="resetAllProgress()">
+        🔄 전체 초기화
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ==========================================================================
+     CORE STATE MANAGEMENT (Single Source of Truth)
+     ========================================================================== */
+  const DEFAULT_KEY_PREFIX = 'exam_planner_sync_';
+  const memoryStore = {};
+  let currentSyncCode = 'STUDY-PLANNER-PASS';
+  let cloudSyncTimer = null;
+  let isSyncing = false;
+
+  // Static tasks metadata
+  const ALL_TASKS = [
+    'c1_1', 'c1_2', 'c1_3', 'c1_4',
+    'k_1', 'k_2', 'k_3', 'k_4', 'k_5', 'k_6',
+    's_1', 's_2', 's_3', 's_4_1', 's_4_2', 's_5', 's_6', 's_7',
+    'e_1', 'e_2', 'e_3', 'e_4', 'e_5', 'e_6',
+    'c2_1', 'c2_2', 'c2_3', 'c2_4', 'c2_5'
+  ];
+
+  // Subject groups mapping
+  const SUBJECT_TASKS = {
+    cal1: { fixedDone: 2, tasks: ['c1_1', 'c1_2', 'c1_3', 'c1_4'], total: 6 },
+    kor:  { fixedDone: 0, tasks: ['k_1', 'k_2', 'k_3', 'k_4', 'k_5', 'k_6'], total: 6 },
+    soc:  { fixedDone: 0, tasks: ['s_1', 's_2', 's_3', 's_4_1', 's_4_2', 's_5', 's_6', 's_7'], total: 8 },
+    eng:  { fixedDone: 0, tasks: ['e_1', 'e_2', 'e_3', 'e_4', 'e_5', 'e_6'], total: 6 },
+    cal2: { fixedDone: 0, tasks: ['c2_1', 'c2_2', 'c2_3', 'c2_4', 'c2_5'], total: 5 }
+  };
+
+  // Daily tasks mapping
+  const DAILY_TASKS = {
+    '0924': ['c2_1', 's_1', 'c1_1'],
+    '0925': ['k_1', 'e_1', 's_2', 'k_2'],
+    '0926': ['k_3', 'e_2', 's_3', 'k_4', 'c2_2'],
+    '0927': ['c1_2', 's_4_1', 's_4_2', 's_5'],
+    '0928': ['c1_3', 'c1_4'],
+    '0929': ['k_5', 's_6', 'k_6', 's_7'],
+    '0930': ['e_3', 'e_4', 'e_5', 'e_6'],
+    '1001': ['c2_3', 'c2_4', 'c2_5']
+  };
+
+  const plannerState = {};
+
+  // Safe Local Storage
+  function setLocal(k, v) {
+    memoryStore[k] = v;
+    try { localStorage.setItem(DEFAULT_KEY_PREFIX + k, v); } catch(e) {}
+  }
+
+  function getLocal(k) {
+    if (memoryStore[k] !== undefined) return memoryStore[k];
+    try {
+      const v = localStorage.getItem(DEFAULT_KEY_PREFIX + k);
+      if (v !== null) return v;
+    } catch(e) {}
+    return null;
+  }
+
+  /* ==========================================================================
+     INIT & RESTORE ENGINE
+     ========================================================================== */
+  function initApp() {
+    // 1. Check URL parameters for share sync state
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeParam = urlParams.get('room') || urlParams.get('code');
+    const stateParam = urlParams.get('state');
+
+    const savedRoom = getLocal('__room_code');
+    if (codeParam) {
+      currentSyncCode = codeParam;
+      setLocal('__room_code', codeParam);
+    } else if (savedRoom) {
+      currentSyncCode = savedRoom;
+    }
+    const roomInput = document.getElementById('sync-room-input');
+    if (roomInput) roomInput.value = currentSyncCode;
+
+    // Load state from URL param or local storage
+    if (stateParam) {
+      try {
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(stateParam))));
+        ALL_TASKS.forEach(t => {
+          if (decoded[t] !== undefined) {
+            plannerState[t] = Boolean(decoded[t]);
+            setLocal(t, decoded[t] ? 'true' : 'false');
+          }
+        });
+      } catch(e) {
+        loadFromStorage();
+      }
+    } else {
+      loadFromStorage();
+    }
+
+    // 2. Setup Event Delegation for 100% reliable click/touch handling
+    setupEventHandlers();
+
+    // 3. Render initial UI & D-Day
+    updateAllViews();
+    calculateDDay();
+    initTheme();
+
+    // 4. Start Cloud Sync polling
+    startCloudSync();
+  }
+
+  function loadFromStorage() {
+    ALL_TASKS.forEach(t => {
+      plannerState[t] = getLocal(t) === 'true';
+    });
+  }
+
+  /* ==========================================================================
+     EVENT DELEGATION (Fixes double triggers & mobile touch quirks)
+     ========================================================================== */
+  function setupEventHandlers() {
+    document.addEventListener('change', function(e) {
+      if (e.target && e.target.matches('input[type="checkbox"][data-task]')) {
+        const taskId = e.target.getAttribute('data-task');
+        if (!taskId) return;
+        const isChecked = e.target.checked;
+        setTaskState(taskId, isChecked);
+      }
+    });
+  }
+
+  function setTaskState(taskId, isChecked) {
+    plannerState[taskId] = isChecked;
+    setLocal(taskId, isChecked ? 'true' : 'false');
+
+    // Haptic feedback if supported on mobile
+    if (window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(isChecked ? 25 : 15);
+    }
+
+    updateAllViews();
+    triggerCloudSyncDebounced();
+  }
+
+  /* ==========================================================================
+     PROGRESS CALCULATION & UI REFRESH
+     ========================================================================== */
+  function updateAllViews() {
+    // 1. Sync all checkboxes and row styles across all views
+    ALL_TASKS.forEach(taskId => {
+      const isChecked = Boolean(plannerState[taskId]);
+      document.querySelectorAll(`input[data-task="${taskId}"]`).forEach(cb => {
+        cb.checked = isChecked;
+      });
+      document.querySelectorAll(`[data-task-row="${taskId}"]`).forEach(row => {
+        if (isChecked) row.classList.add('done');
+        else row.classList.remove('done');
+      });
+    });
+
+    // 2. Calculate Subject Progress
+    let totalCheckedAll = 2; // 2 pre-completed tasks in cal1
+    const totalAllTasks = 31;
+
+    Object.keys(SUBJECT_TASKS).forEach(grp => {
+      const info = SUBJECT_TASKS[grp];
+      let checkedInGrp = info.fixedDone;
+      info.tasks.forEach(t => {
+        if (plannerState[t]) checkedInGrp++;
+      });
+
+      const pct = Math.round((checkedInGrp / info.total) * 100);
+      document.querySelectorAll(`.subj-progress-bar[data-group="${grp}"]`).forEach(bar => {
+        bar.style.width = pct + '%';
+      });
+      document.querySelectorAll(`.subj-pct[data-group="${grp}"]`).forEach(txt => {
+        txt.textContent = `${pct}% (${checkedInGrp}/${info.total})`;
+      });
+
+      if (grp !== 'cal1') {
+        totalCheckedAll += (checkedInGrp - info.fixedDone);
+      } else {
+        totalCheckedAll += (checkedInGrp - info.fixedDone);
+      }
+    });
+
+    // 3. Calculate Overall Progress
+    const overallPct = Math.round((totalCheckedAll / totalAllTasks) * 100);
+    const mainBar = document.getElementById('progress-bar');
+    const mainText = document.getElementById('progress-text');
+    if (mainBar) mainBar.style.width = overallPct + '%';
+    if (mainText) mainText.textContent = `${totalCheckedAll} / ${totalAllTasks} 완료 (${overallPct}%)`;
+
+    // 4. Calculate Daily Progress (Crucial for Daily Timetable)
+    Object.keys(DAILY_TASKS).forEach(dayKey => {
+      const dayTasks = DAILY_TASKS[dayKey];
+      let dayDone = 0;
+      dayTasks.forEach(t => { if (plannerState[t]) dayDone++; });
+      const dayTotal = dayTasks.length;
+      const dayPct = dayTotal > 0 ? Math.round((dayDone / dayTotal) * 100) : 0;
+
+      document.querySelectorAll(`[data-day-bar="${dayKey}"]`).forEach(bar => {
+        bar.style.width = dayPct + '%';
+      });
+      document.querySelectorAll(`[data-day-text="${dayKey}"]`).forEach(txt => {
+        txt.textContent = `${dayDone} / ${dayTotal} 완료 (${dayPct}%)`;
+      });
+    });
+
+    // 5. Celebration effect when hitting 100%
+    if (overallPct === 100 && !window.__celebrated) {
+      window.__celebrated = true;
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+      }
+    } else if (overallPct < 100) {
+      window.__celebrated = false;
+    }
+  }
+
+  /* ==========================================================================
+     VIEW SWITCHING ENGINE (Subject, Daily, Dual Split)
+     ========================================================================== */
+  function switchView(mode) {
+    const vSubj = document.getElementById('view-subject');
+    const vDaily = document.getElementById('view-daily');
+    const vDual = document.getElementById('view-dual');
+
+    const bSubj = document.getElementById('btn-tab-subj');
+    const bDaily = document.getElementById('btn-tab-daily');
+    const bDual = document.getElementById('btn-tab-dual');
+
+    bSubj.classList.remove('active');
+    bDaily.classList.remove('active');
+    if (bDual) bDual.classList.remove('active');
+
+    vSubj.style.display = 'none';
+    vDaily.style.display = 'none';
+    vDual.style.display = 'none';
+
+    if (mode === 'subject') {
+      vSubj.style.display = 'grid';
+      bSubj.classList.add('active');
+    } else if (mode === 'daily') {
+      vDaily.style.display = 'flex';
+      bDaily.classList.add('active');
+    } else if (mode === 'dual') {
+      vDual.style.display = 'grid';
+      if (bDual) bDual.classList.add('active');
+      setupDualView();
+    }
+  }
+
+  function setupDualView() {
+    const leftTarget = document.getElementById('dual-left-target');
+    const rightTarget = document.getElementById('dual-right-target');
+    const vDaily = document.getElementById('view-daily');
+    const vSubj = document.getElementById('view-subject');
+
+    // Move nodes cleanly into dual view containers if needed
+    if (leftTarget.children.length === 0) {
+      vDaily.style.display = 'flex';
+      leftTarget.appendChild(vDaily);
+    }
+    if (rightTarget.children.length === 0) {
+      vSubj.style.display = 'grid';
+      rightTarget.appendChild(vSubj);
+    }
+  }
+
+  /* ==========================================================================
+     D-DAY & THEME
+     ========================================================================== */
+  function calculateDDay() {
+    const examDate = new Date(2026, 8, 29); // 2026-09-29
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffTime = examDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const badge = document.getElementById('dday-badge');
+    if (badge) {
+      if (diffDays > 0) badge.textContent = `D-${diffDays}`;
+      else if (diffDays === 0) badge.textContent = 'D-DAY!';
+      else badge.textContent = `시험 ${Math.abs(diffDays)}일차`;
+    }
+  }
+
+  function initTheme() {
+    const saved = getLocal('__theme');
+    if (saved === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.getElementById('theme-btn').textContent = '☀️ 주간 모드';
+    }
+  }
+
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+      document.documentElement.removeAttribute('data-theme');
+      setLocal('__theme', 'light');
+      document.getElementById('theme-btn').textContent = '🌙 야간 모드';
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      setLocal('__theme', 'dark');
+      document.getElementById('theme-btn').textContent = '☀️ 주간 모드';
+    }
+  }
+
+  /* ==========================================================================
+     CLOUD & MULTI-DEVICE SYNC ENGINE (Instant Sync across Phone & Tablet)
+     ========================================================================== */
+  function setSyncStatus(status, text) {
+    const dot = document.getElementById('sync-dot');
+    const txt = document.getElementById('sync-text');
+    if (!dot || !txt) return;
+
+    dot.className = 'sync-dot';
+    if (status === 'syncing') {
+      dot.classList.add('syncing');
+      txt.textContent = text || '동기화 중...';
+    } else if (status === 'synced') {
+      txt.textContent = text || `동기화됨 (${currentSyncCode})`;
+    } else {
+      dot.classList.add('offline');
+      txt.textContent = text || '로컬 저장됨';
+    }
+  }
+
+  function triggerCloudSyncDebounced() {
+    if (cloudSyncTimer) clearTimeout(cloudSyncTimer);
+    cloudSyncTimer = setTimeout(() => {
+      pushToCloud(false);
+    }, 600);
+  }
+
+  async function pushToCloud(showNotice) {
+    if (!currentSyncCode) return;
+    setSyncStatus('syncing', '클라우드 저장 중...');
+    
+    try {
+      const payload = {
+        updatedAt: Date.now(),
+        code: currentSyncCode,
+        state: plannerState
+      };
+      
+      const res = await fetch(`https://kvdb.io/bucket_${encodeURIComponent(currentSyncCode)}/planner_data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        setSyncStatus('synced', `동기화됨 (${currentSyncCode})`);
+        if (showNotice) alert('클라우드에 성공적으로 백업되었습니다!');
+      } else {
+        setSyncStatus('offline', '로컬 저장됨');
+      }
+    } catch(err) {
+      setSyncStatus('offline', '로컬 저장됨');
+    }
+  }
+
+  async function pullFromCloud(showNotice) {
+    if (!currentSyncCode) return;
+    setSyncStatus('syncing', '클라우드 확인 중...');
+
+    try {
+      const res = await fetch(`https://kvdb.io/bucket_${encodeURIComponent(currentSyncCode)}/planner_data`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.state) {
+          ALL_TASKS.forEach(t => {
+            const val = Boolean(data.state[t]);
+            plannerState[t] = val;
+            setLocal(t, val ? 'true' : 'false');
+          });
+          updateAllViews();
+          setSyncStatus('synced', `동기화됨 (${currentSyncCode})`);
+          if (showNotice) alert('클라우드에서 최신 데이터를 가져왔습니다!');
+          return;
+        }
+      }
+      setSyncStatus('synced', `연결됨 (${currentSyncCode})`);
+    } catch(err) {
+      setSyncStatus('offline', '로컬 저장됨');
+    }
+  }
+
+  function startCloudSync() {
+    // Initial fetch from cloud
+    pullFromCloud(false);
+
+    // Auto-poll every 5 seconds for cross-device updates (phone <-> tablet)
+    setInterval(() => {
+      pullFromCloud(false);
+    }, 5000);
+  }
+
+  function applySyncCode() {
+    const input = document.getElementById('sync-room-input');
+    const newCode = (input.value || '').trim();
+    if (!newCode) {
+      alert('동기화 코드를 입력해주세요!');
+      return;
+    }
+    currentSyncCode = newCode;
+    setLocal('__room_code', newCode);
+    alert(`동기화 코드가 [${newCode}] (으)로 설정되었습니다.\n이제 다른 폰/아이패드에서도 이 코드를 입력하시면 실시간으로 연동됩니다!`);
+    pullFromCloud(true);
+    generateSyncQR();
+  }
+
+  /* ==========================================================================
+     QR CODE & LINK SHARING (Instant scan for iPad/Phone)
+     ========================================================================== */
+  function openSyncModal() {
+    const modal = document.getElementById('sync-modal');
+    modal.classList.add('open');
+    generateSyncQR();
+  }
+
+  function closeSyncModal() {
+    document.getElementById('sync-modal').classList.remove('open');
+  }
+
+  function closeSyncModalOnBg(e) {
+    if (e.target.id === 'sync-modal') closeSyncModal();
+  }
+
+  function generateSyncQR() {
+    const canvasBox = document.getElementById('qrcode-canvas');
+    if (!canvasBox) return;
+    canvasBox.innerHTML = '';
+
+    const shareUrl = getShareableUrl();
+    if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
+      const canvas = document.createElement('canvas');
+      QRCode.toCanvas(canvas, shareUrl, { width: 180, margin: 1 }, function (error) {
+        if (!error) canvasBox.appendChild(canvas);
+      });
+    }
+  }
+
+  function getShareableUrl() {
+    const base = window.location.origin + window.location.pathname;
+    const jsonStr = JSON.stringify(plannerState);
+    const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+    return `${base}?room=${encodeURIComponent(currentSyncCode)}&state=${encoded}`;
+  }
+
+  function copyShareLink() {
+    const url = getShareableUrl();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        alert('동기화 링크가 클립보드에 복사되었습니다!\n카카오톡이나 메모장에 붙여넣어 폰/패드에서 열어보세요.');
+      });
+    } else {
+      prompt('아래 링크를 복사하여 폰/패드에서 여세요:', url);
+    }
+  }
+
+  function resetAllProgress() {
+    if (confirm('정말로 모든 체크를 초기화하시겠습니까?')) {
+      ALL_TASKS.forEach(t => {
+        plannerState[t] = false;
+        setLocal(t, 'false');
+      });
+      updateAllViews();
+      pushToCloud(false);
+      alert('초기화되었습니다.');
+    }
+  }
+
+  // Auto-init on load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+  } else {
+    initApp();
+  }
+</script>
+
+</body>
+</html>
