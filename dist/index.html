@@ -1932,26 +1932,33 @@
   }
 
   /* ==========================================================================
-     CLOUD & MULTI-DEVICE SYNC ENGINE (Instant Sync across Phone & Tablet)
+     CLOUD & MULTI-DEVICE REALTIME SYNC ENGINE (Instant Sync across Phone & Tablet)
      ========================================================================== */
   const SYNC_APP_KEY = 'ccfjm9gs';
   let lastLocalUpdateTime = 0;
+  let realtimeEventSource = null;
 
-  function strToHex(str) {
-    let hex = '';
-    const utf8 = unescape(encodeURIComponent(str));
-    for (let i = 0; i < utf8.length; i++) {
-      hex += utf8.charCodeAt(i).toString(16).padStart(2, '0');
-    }
-    return hex;
+  // Encode 29 booleans into an ultra-compact 8-character hex string
+  function encodeState(state) {
+    let mask = 0;
+    ALL_TASKS.forEach((t, i) => {
+      if (state[t]) mask |= (1 << i);
+    });
+    return mask.toString(16);
   }
 
-  function hexToStr(hex) {
-    let str = '';
-    for (let i = 0; i < hex.length; i += 2) {
-      str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-    }
-    return decodeURIComponent(escape(str));
+  function decodeState(hex) {
+    const mask = parseInt(hex, 16) || 0;
+    const state = {};
+    ALL_TASKS.forEach((t, i) => {
+      state[t] = Boolean(mask & (1 << i));
+    });
+    return state;
+  }
+
+  function getSafeKey() {
+    const raw = (currentSyncCode || 'DEFAULT').trim();
+    return 'study_' + encodeURIComponent(raw.replace(/[^a-zA-Z0-9_-]/g, '_'));
   }
 
   function setSyncStatus(status, text) {
@@ -1964,7 +1971,7 @@
       dot.classList.add('syncing');
       txt.textContent = text || '동기화 중...';
     } else if (status === 'synced') {
-      txt.textContent = text || `동기화됨 (${currentSyncCode})`;
+      txt.textContent = text || `실시간 동기화됨 (${currentSyncCode})`;
     } else {
       dot.classList.add('offline');
       txt.textContent = text || '로컬 저장됨';
@@ -1975,7 +1982,7 @@
     if (cloudSyncTimer) clearTimeout(cloudSyncTimer);
     cloudSyncTimer = setTimeout(() => {
       pushToCloud(false);
-    }, 600);
+    }, 400);
   }
 
   async function pushToCloud(showNotice) {
@@ -1987,38 +1994,43 @@
     
     const now = Date.now();
     lastLocalUpdateTime = now;
-    const payload = {
-      updatedAt: now,
-      code: currentSyncCode,
-      state: plannerState
-    };
-    const jsonStr = JSON.stringify(payload);
+    const hex = encodeState(plannerState);
+    const compactVal = `${now}_${hex}`;
+    const safeKey = getSafeKey();
 
     let saved = false;
 
-    // 1. Local Server API (/api/sync)
+    // 1. Primary: ntfy.sh realtime pub/sub
+    try {
+      const ntfyRes = await fetch(`https://ntfy.sh/${safeKey}`, {
+        method: 'POST',
+        headers: { 'Cache': 'yes' },
+        body: JSON.stringify({ updatedAt: now, hex: hex })
+      });
+      if (ntfyRes.ok) saved = true;
+    } catch(e) {}
+
+    // 2. Secondary: keyvalue.immanuel.co (compact 21-char value, body '1' to satisfy IIS)
+    try {
+      const kvRes = await fetch(`https://keyvalue.immanuel.co/api/KeyVal/UpdateValue/${SYNC_APP_KEY}/${safeKey}/${compactVal}`, {
+        method: 'POST',
+        body: '1'
+      });
+      if (kvRes.ok) saved = true;
+    } catch(e) {}
+
+    // 3. Tertiary: Local server /api/sync if running locally
     try {
       const localRes = await fetch('/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: jsonStr
+        body: JSON.stringify({ code: currentSyncCode, updatedAt: now, state: plannerState })
       });
       if (localRes.ok) saved = true;
     } catch(e) {}
 
-    // 2. Reliable Cloud KeyValue Store (Works anywhere including Vercel)
-    try {
-      const hexPayload = strToHex(jsonStr);
-      const safeKey = 'exam_' + encodeURIComponent(currentSyncCode.replace(/[^a-zA-Z0-9_-]/g, '_'));
-      const cloudRes = await fetch(`https://keyvalue.immanuel.co/api/KeyVal/UpdateValue/${SYNC_APP_KEY}/${safeKey}/${hexPayload}`, {
-        method: 'POST',
-        headers: { 'Content-Length': '0' }
-      });
-      if (cloudRes.ok) saved = true;
-    } catch(e) {}
-
     if (saved) {
-      setSyncStatus('synced', `동기화됨 (${currentSyncCode})`);
+      setSyncStatus('synced', `실시간 연동됨 (${currentSyncCode})`);
       if (showNotice) alert(`[${currentSyncCode}] 코드로 클라우드에 성공적으로 백업되었습니다!`);
     } else {
       setSyncStatus('offline', '로컬 저장됨');
@@ -2026,70 +2038,135 @@
     }
   }
 
+  function applyRemoteData(data) {
+    if (!data || !data.updatedAt) return false;
+    // Don't overwrite if local state was updated more recently
+    if (lastLocalUpdateTime && data.updatedAt <= lastLocalUpdateTime) return false;
+
+    let targetState = null;
+    if (data.state) {
+      targetState = data.state;
+    } else if (data.hex) {
+      targetState = decodeState(data.hex);
+    }
+    if (!targetState) return false;
+
+    let hasChange = false;
+    ALL_TASKS.forEach(t => {
+      const val = Boolean(targetState[t]);
+      if (plannerState[t] !== val) {
+        plannerState[t] = val;
+        setLocal(t, val ? 'true' : 'false');
+        hasChange = true;
+      }
+    });
+
+    if (hasChange) {
+      lastLocalUpdateTime = data.updatedAt;
+      updateAllViews();
+      setSyncStatus('synced', `실시간 연동됨 (${currentSyncCode})`);
+      return true;
+    }
+    return false;
+  }
+
   async function pullFromCloud(showNotice) {
     if (!currentSyncCode) return;
-    setSyncStatus('syncing', '클라우드 확인 중...');
+    if (showNotice) setSyncStatus('syncing', '클라우드 확인 중...');
 
-    let cloudData = null;
+    const safeKey = getSafeKey();
+    let remoteData = null;
 
-    // 1. Check Local Server API
+    // 1. Try ntfy.sh raw cache
     try {
-      const localRes = await fetch(`/api/sync?code=${encodeURIComponent(currentSyncCode)}`);
-      if (localRes.ok) {
-        const resJson = await localRes.json();
-        if (resJson && resJson.success && resJson.data && resJson.data.state) {
-          cloudData = resJson.data;
+      const ntfyRes = await fetch(`https://ntfy.sh/${safeKey}/raw?poll=1`);
+      if (ntfyRes.ok) {
+        const text = (await ntfyRes.text()).trim();
+        if (text) {
+          const parsed = JSON.parse(text);
+          if (parsed && (parsed.hex || parsed.state)) remoteData = parsed;
         }
       }
     } catch(e) {}
 
-    // 2. Check Cloud KeyValue Store
-    try {
-      const safeKey = 'exam_' + encodeURIComponent(currentSyncCode.replace(/[^a-zA-Z0-9_-]/g, '_'));
-      const cloudRes = await fetch(`https://keyvalue.immanuel.co/api/KeyVal/GetValue/${SYNC_APP_KEY}/${safeKey}`);
-      if (cloudRes.ok) {
-        const hex = await cloudRes.json();
-        if (hex && typeof hex === 'string') {
-          const parsed = JSON.parse(hexToStr(hex));
-          if (parsed && parsed.state) {
-            if (!cloudData || (parsed.updatedAt && parsed.updatedAt > (cloudData.updatedAt || 0))) {
-              cloudData = parsed;
+    // 2. Fallback to keyvalue.immanuel.co
+    if (!remoteData) {
+      try {
+        const kvRes = await fetch(`https://keyvalue.immanuel.co/api/KeyVal/GetValue/${SYNC_APP_KEY}/${safeKey}`);
+        if (kvRes.ok) {
+          const raw = await kvRes.json();
+          if (raw && typeof raw === 'string' && raw.includes('_')) {
+            const parts = raw.split('_');
+            const updatedAt = parseInt(parts[0], 10);
+            const hex = parts[1];
+            if (updatedAt && hex) {
+              remoteData = { updatedAt, hex };
             }
           }
         }
-      }
-    } catch(e) {}
+      } catch(e) {}
+    }
 
-    if (cloudData && cloudData.state) {
-      // Prevent stale cloud data from overwriting very recent local clicks
-      if (cloudData.updatedAt && lastLocalUpdateTime && cloudData.updatedAt < lastLocalUpdateTime) {
-        setSyncStatus('synced', `동기화됨 (${currentSyncCode})`);
-        return;
-      }
+    // 3. Fallback to local server /api/sync
+    if (!remoteData) {
+      try {
+        const localRes = await fetch(`/api/sync?code=${encodeURIComponent(currentSyncCode)}`);
+        if (localRes.ok) {
+          const resJson = await localRes.json();
+          if (resJson && resJson.success && resJson.data) remoteData = resJson.data;
+        }
+      } catch(e) {}
+    }
 
-      ALL_TASKS.forEach(t => {
-        const val = Boolean(cloudData.state[t]);
-        plannerState[t] = val;
-        setLocal(t, val ? 'true' : 'false');
-      });
-      lastLocalUpdateTime = cloudData.updatedAt || Date.now();
-      updateAllViews();
-      setSyncStatus('synced', `동기화됨 (${currentSyncCode})`);
-      if (showNotice) alert(`[${currentSyncCode}] 클라우드에서 최신 데이터를 성공적으로 가져왔습니다!`);
+    if (remoteData) {
+      const updated = applyRemoteData(remoteData);
+      setSyncStatus('synced', `실시간 연동됨 (${currentSyncCode})`);
+      if (showNotice) {
+        if (updated) alert(`[${currentSyncCode}] 클라우드에서 최신 데이터를 가져왔습니다!`);
+        else alert(`[${currentSyncCode}] 이미 최신 상태입니다.`);
+      }
     } else {
       setSyncStatus('synced', `연결됨 (${currentSyncCode})`);
       if (showNotice) alert(`[${currentSyncCode}] 코드로 저장된 클라우드 데이터가 없습니다.\n현재 기기에서 먼저 [지금 클라우드로 백업]을 눌러주세요.`);
     }
   }
 
+  // Connect Realtime SSE (Server-Sent Events for instant cross-device updates)
+  function connectRealtimeSync() {
+    if (realtimeEventSource) {
+      try { realtimeEventSource.close(); } catch(e) {}
+      realtimeEventSource = null;
+    }
+    if (!currentSyncCode) return;
+
+    const safeKey = getSafeKey();
+    try {
+      if (typeof EventSource !== 'undefined') {
+        realtimeEventSource = new EventSource(`https://ntfy.sh/${safeKey}/sse`);
+        realtimeEventSource.onmessage = function(e) {
+          try {
+            const msgObj = JSON.parse(e.data);
+            if (msgObj && msgObj.message) {
+              const data = JSON.parse(msgObj.message);
+              applyRemoteData(data);
+            }
+          } catch(err) {}
+        };
+      }
+    } catch(err) {}
+  }
+
   function startCloudSync() {
-    // Initial fetch from cloud
+    // 1. Initial fetch from cloud
     pullFromCloud(false);
 
-    // Auto-poll every 5 seconds for cross-device updates (phone <-> tablet)
+    // 2. Connect instant SSE stream (instant sync when checking box)
+    connectRealtimeSync();
+
+    // 3. Auto-poll every 3 seconds as a rock-solid background fallback
     setInterval(() => {
       pullFromCloud(false);
-    }, 5000);
+    }, 3000);
   }
 
   function applySyncCode() {
@@ -2101,8 +2178,9 @@
     }
     currentSyncCode = newCode;
     setLocal('__room_code', newCode);
-    alert(`동기화 코드가 [${newCode}] (으)로 설정되었습니다.\n이제 다른 기기(폰/패드)에서도 이 코드를 입력하시면 실시간으로 연동됩니다!`);
+    alert(`동기화 코드가 [${newCode}] (으)로 설정되었습니다.\n이제 다른 기기에서도 이 코드를 입력하시면 실시간으로 자동 연동됩니다!`);
     pullFromCloud(true);
+    connectRealtimeSync();
   }
 
   /* ==========================================================================
