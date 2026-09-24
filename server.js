@@ -74,7 +74,24 @@ const server = http.createServer((req, res) => {
     }
   }
 
-  let filePath = path.join(__dirname, reqPath === '/' ? 'index.html' : reqPath);
+  // Secure static file serving with path traversal protection
+  let normalizedRelPath = path.normalize(reqPath === '/' ? 'index.html' : reqPath).replace(/^(\.\.[\/\\])+/, '');
+  let filePath = path.resolve(__dirname, normalizedRelPath);
+
+  // Prevent directory traversal outside root directory
+  if (!filePath.startsWith(__dirname)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('403 Forbidden');
+    return;
+  }
+
+  // Block access to sensitive files (hidden files, git data, batch scripts, sync data)
+  const baseName = path.basename(filePath);
+  if (baseName.startsWith('.') || filePath.includes('.git') || filePath.endsWith('.bat') || baseName.includes('sync_data')) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('403 Forbidden');
+    return;
+  }
 
   fs.readFile(filePath, (err, content) => {
     if (err) {
@@ -86,6 +103,7 @@ const server = http.createServer((req, res) => {
     let contentType = 'text/html; charset=utf-8';
     if (filePath.endsWith('.css')) contentType = 'text/css';
     if (filePath.endsWith('.js')) contentType = 'text/javascript';
+    if (filePath.endsWith('.json')) contentType = 'application/json';
 
     res.writeHead(200, { 'Content-Type': contentType });
     res.end(content);

@@ -1,5 +1,17 @@
+# Sensitive local data & credentials
+*.env
+*.env.*
+*.key
+*.pem
+sync_data*.json
+
+# Dependency & build output
 node_modules/
 .vercel/
 *.log
+
+# OS & IDE
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
