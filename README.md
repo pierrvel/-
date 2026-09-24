@@ -1,3 +1,4 @@
 내가 쓰려고 만든 스터디 플래너
 안티그래비티 3.8 FLASH HIGH 사용
 바이브코딩 어렵네
+https://pierrvel.github.io/-/ 써보세요
