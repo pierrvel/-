@@ -2869,35 +2869,54 @@
       return;
     }
 
-    if (statusEl) statusEl.innerHTML = '⏳ <em>Gemini 3.7+ 모델 목록 조회 중...</em>';
+    if (statusEl) statusEl.innerHTML = '⏳ <em>사용 가능한 Gemini 모델 목록 조회 중...</em>';
 
     cachedAvailableModels = null;
     try {
       const models = await getAvailableModels(key);
-      const models37 = (models || []).filter(m => isGemini37Plus(m));
-      if (models37.length > 0) {
-        const best = models37.find(m => m.includes('3.8-flash')) ||
-                     models37.find(m => m.includes('3.7-flash')) ||
-                     models37.find(m => m.includes('3.8')) ||
-                     models37.find(m => m.includes('3.7')) ||
-                     models37[0];
+      if (models && models.length > 0) {
+        const models37 = models.filter(m => isGemini37Plus(m));
+        if (models37.length > 0) {
+          const best = models37.find(m => m.includes('3.8-flash')) ||
+                       models37.find(m => m.includes('3.7-flash')) ||
+                       models37.find(m => m.includes('3.8')) ||
+                       models37.find(m => m.includes('3.7')) ||
+                       models37[0];
 
-        if (input) input.value = best;
-        setLocal('__gemini_model', best);
-        if (badge) badge.textContent = best.replace('gemini-', '');
-        if (statusEl) {
-          statusEl.innerHTML = `<span style="color:#10b981; font-weight:700;">✅ Gemini 3.7+ 모델 ${models37.length}개 확인!</span> 최적 모델 <strong>[${best}]</strong>(으)로 선택되었습니다.`;
+          if (input) input.value = best;
+          setLocal('__gemini_model', best);
+          if (badge) badge.textContent = best.replace('gemini-', '');
+          if (statusEl) {
+            statusEl.innerHTML = `<span style="color:#10b981; font-weight:700;">✅ Gemini 3.7+ 모델 ${models37.length}개 확인!</span> 최적 모델 <strong>[${best}]</strong>(으)로 선택되었습니다.`;
+          }
+          alert(`[${best}] (Gemini 3.7+ 모델)이 감지되어 자동 선택되었습니다!`);
+        } else {
+          // Find the best available flash model supported by user's key
+          const flash = models.filter(m => m.includes('flash'));
+          const best = flash.find(m => m.includes('2.5')) ||
+                       flash.find(m => m.includes('2.0')) ||
+                       models.find(m => m.includes('2.5')) ||
+                       models.find(m => m.includes('2.0')) ||
+                       flash[0] ||
+                       models[0];
+
+          if (input) input.value = best;
+          setLocal('__gemini_model', best);
+          if (badge) badge.textContent = best.replace('gemini-', '');
+          if (statusEl) {
+            statusEl.innerHTML = `<span style="color:#10b981; font-weight:700;">✅ 지원 모델 확인!</span> 현재 API 키 권한에서 최고 성능 모델인 <strong>[${best}]</strong>(으)로 최적화되었습니다.`;
+          }
+          alert(`현재 Google API 키에서 지원하는 최상위 모델인 [${best}]이(가) 자동 감지되어 설정되었습니다!\n(Google 무료 AI Studio 키는 2.5 Flash가 현재 최고 성능 모델입니다)`);
         }
-        alert(`[${best}] (Gemini 3.7+ 최신 모델)이 감지되어 자동 선택되었습니다!`);
       } else {
-        const fallback38 = 'gemini-3.8-flash';
-        if (input) input.value = fallback38;
-        setLocal('__gemini_model', fallback38);
-        if (badge) badge.textContent = '3.8-flash';
+        const fallback = 'gemini-2.5-flash';
+        if (input) input.value = fallback;
+        setLocal('__gemini_model', fallback);
+        if (badge) badge.textContent = '2.5-flash';
         if (statusEl) {
-          statusEl.innerHTML = `<span style="color:#6366f1; font-weight:700;">ℹ️ Gemini 3.8 Flash 기본 설정 완료!</span> (3.7+ 전용 모드 작동)`;
+          statusEl.innerHTML = `<span style="color:#6366f1; font-weight:700;">ℹ️ Gemini 2.5 Flash 기본 설정!</span>`;
         }
-        alert(`Gemini 3.8 Flash (${fallback38}) 모델로 기본 설정되었습니다!`);
+        alert(`Gemini 2.5 Flash (${fallback}) 모델로 설정되었습니다.`);
       }
     } catch(err) {
       if (statusEl) {
@@ -2922,12 +2941,6 @@
     const savedKey = getLocal('__gemini_api_key') || '';
     let savedModel = getLocal('__gemini_model') || 'gemini-3.8-flash';
 
-    // Strictly enforce Gemini 3.7+ models (upgrade old 2.5/2.0/1.5 to 3.8 Flash)
-    if (!isGemini37Plus(savedModel)) {
-      savedModel = 'gemini-3.8-flash';
-      setLocal('__gemini_model', savedModel);
-    }
-
     if (keyInput) keyInput.value = savedKey;
     if (modelInput) modelInput.value = savedModel;
     if (badge) badge.textContent = savedModel.replace('gemini-', '');
@@ -2942,7 +2955,7 @@
             const best = models37.find(m => m.includes('3.8-flash')) ||
                          models37.find(m => m.includes('3.7-flash')) ||
                          models37[0];
-            if (best && !isGemini37Plus(savedModel)) {
+            if (best && !savedModel) {
               setLocal('__gemini_model', best);
               if (modelInput) modelInput.value = best;
               if (badge) badge.textContent = best.replace('gemini-', '');
@@ -2958,26 +2971,19 @@
   }
 
   function getGeminiModel() {
-    const m = getLocal('__gemini_model');
-    return (m && isGemini37Plus(m)) ? m : 'gemini-3.8-flash';
+    return getLocal('__gemini_model') || 'gemini-3.8-flash';
   }
 
   function saveAiSettings() {
     const key = (document.getElementById('gemini-api-key-input').value || '').trim();
     let model = (document.getElementById('gemini-model-input').value || 'gemini-3.8-flash').trim();
-    if (!isGemini37Plus(model)) {
-      alert(`⚠️ 요청하신 설정에 따라 Gemini 3.7 이상의 모델(예: gemini-3.8-flash, gemini-3.7-flash)만 사용 가능합니다.\ngemini-3.8-flash로 자동 전환됩니다.`);
-      model = 'gemini-3.8-flash';
-      const modelInput = document.getElementById('gemini-model-input');
-      if (modelInput) modelInput.value = model;
-    }
     setLocal('__gemini_api_key', key);
     setLocal('__gemini_model', model);
     cachedAvailableModels = null;
     const badge = document.getElementById('ai-model-badge');
     if (badge) badge.textContent = model.replace('gemini-', '');
     toggleAiSettings();
-    alert(`AI 설정이 저장되었습니다! (모델: ${model})`);
+    alert(`AI 설정이 저장되었습니다! (설정 모델: ${model})`);
 
     if (key) {
       getAvailableModels(key).then(models => {
@@ -3710,39 +3716,47 @@
     const savedModel = (getGeminiModel() || '').trim();
     const candidates = [];
 
-    // Strictly enforce 3.7+ models
-    if (savedModel && isGemini37Plus(savedModel)) {
+    // 1. User's saved/preferred model (e.g. gemini-3.8-flash or gemini-3.7-flash)
+    if (savedModel && !candidates.includes(savedModel)) {
       candidates.push(savedModel);
     }
 
-    // Add discovered 3.7+ models in priority order (prefer 3.8 Flash > 3.7 Flash)
-    if (available.length > 0) {
-      const models37 = available.filter(m => isGemini37Plus(m));
-      const flash37 = models37.filter(m => m.includes('flash'));
-      flash37.sort((a, b) => {
-        if (a.includes('3.8') && !b.includes('3.8')) return -1;
-        if (!a.includes('3.8') && b.includes('3.8')) return 1;
-        if (a.includes('3.7') && !b.includes('3.7')) return -1;
-        if (!a.includes('3.7') && b.includes('3.7')) return 1;
-        return 0;
+    // 2. Target 3.7+ candidates
+    const target37 = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.7-pro', 'gemini-3.8-pro'];
+    target37.forEach(m => {
+      if (!candidates.includes(m)) candidates.push(m);
+    });
+
+    // 3. Discovered models from user's API key (sorted by performance tier)
+    if (available && available.length > 0) {
+      const sortedAvailable = [...available].sort((a, b) => {
+        const score = (m) => {
+          if (m.includes('3.8')) return 50;
+          if (m.includes('3.7')) return 40;
+          if (m.includes('2.5') && m.includes('flash')) return 30;
+          if (m.includes('2.5')) return 25;
+          if (m.includes('2.0') && m.includes('flash')) return 20;
+          if (m.includes('2.0')) return 15;
+          if (m.includes('flash')) return 10;
+          return 1;
+        };
+        return score(b) - score(a);
       });
-      flash37.forEach(m => {
-        if (!candidates.includes(m)) candidates.push(m);
-      });
-      models37.forEach(m => {
+      sortedAvailable.forEach(m => {
         if (!candidates.includes(m)) candidates.push(m);
       });
     }
 
-    // Static Gemini 3.7+ fallback list (strictly >= 3.7)
-    const staticCandidates = [
-      'gemini-3.8-flash',
-      'gemini-3.7-flash',
-      'gemini-3.7-pro',
-      'gemini-3.8-pro',
-      'gemini-3.7-flash-thinking'
+    // 4. Guaranteed active fallback models (Google AI Studio flagship GA models)
+    const fallbackList = [
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-flash',
+      'gemini-pro'
     ];
-    staticCandidates.forEach(m => {
+    fallbackList.forEach(m => {
       if (!candidates.includes(m)) candidates.push(m);
     });
 
@@ -3785,7 +3799,13 @@
 
     let lastError = null;
     for (const model of candidates) {
-      for (const ver of ['v1beta', 'v1']) {
+      // In Google Gemini API, modern models exist on v1beta
+      const versions = ['v1beta'];
+      if (model === 'gemini-pro' || model.includes('1.5')) {
+        versions.push('v1');
+      }
+
+      for (const ver of versions) {
         try {
           const url = `https://generativelanguage.googleapis.com/${ver}/models/${model}:generateContent?key=${apiKey}`;
           const res = await fetch(url, {
@@ -3802,6 +3822,11 @@
               if (badge) badge.textContent = model.replace('gemini-', '');
               const modelInput = document.getElementById('gemini-model-input');
               if (modelInput) modelInput.value = model;
+
+              if (savedModel && isGemini37Plus(savedModel) && !isGemini37Plus(model) && !window.__modelFallbackNotified) {
+                window.__modelFallbackNotified = true;
+                showToast(`💡 Google API 키 권한에 맞춰 [${model}] 모델로 자동 최적화되었습니다.`, false);
+              }
               return { text: candidate, modelUsed: model };
             }
           } else {
@@ -3820,7 +3845,7 @@
         }
       }
     }
-    throw lastError || new Error('사용 가능한 Gemini 3.7+ 모델을 찾지 못했습니다.');
+    throw lastError || new Error('사용 가능한 Gemini 모델을 찾지 못했습니다.');
   }
 
   function appendChatMessage(role, contentHtml) {
