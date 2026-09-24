@@ -565,6 +565,173 @@
       cursor: pointer;
     }
 
+    /* AI Assistant UI & Floating Action Button */
+    .ai-fab-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      z-index: 99;
+      background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 0.92rem;
+      cursor: pointer;
+      box-shadow: 0 10px 25px -3px rgba(124, 58, 237, 0.45);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+      user-select: none;
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .ai-fab-btn:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 14px 28px -3px rgba(124, 58, 237, 0.55);
+    }
+    .ai-fab-btn:active {
+      transform: scale(0.96);
+    }
+
+    .tool-btn.ai-btn {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.12));
+      border-color: rgba(168, 85, 247, 0.4);
+      color: #9333ea;
+      font-weight: 800;
+    }
+    [data-theme="dark"] .tool-btn.ai-btn {
+      color: #c084fc;
+      border-color: rgba(192, 132, 252, 0.4);
+    }
+
+    /* AI Modal Custom Styling */
+    .ai-modal-card {
+      max-width: 560px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+      padding: 20px 18px 16px 18px;
+    }
+    .ai-chat-box {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+      min-height: 220px;
+      max-height: 48vh;
+    }
+    .ai-msg {
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      word-break: keep-all;
+      animation: fadeIn 0.2s ease;
+    }
+    .ai-msg.user {
+      align-self: flex-end;
+      background: var(--primary);
+      color: #ffffff;
+      border-bottom-right-radius: 2px;
+      max-width: 85%;
+    }
+    .ai-msg.ai {
+      align-self: flex-start;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-bottom-left-radius: 2px;
+      max-width: 90%;
+    }
+    .ai-action-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      margin-top: 6px;
+    }
+    .quick-chips-wrap {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .quick-chips-wrap::-webkit-scrollbar { display: none; }
+    .quick-chip {
+      white-space: nowrap;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .quick-chip:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+    .ai-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .ai-input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.88rem;
+      outline: none;
+    }
+    .ai-input:focus {
+      border-color: var(--primary);
+    }
+    .ai-send-btn {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: #ffffff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .ai-send-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .ai-settings-panel {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
     /* Responsive Queries & Mobile Precision Layout */
     @media (max-width: 820px) {
       .views-wrapper.mode-dual {
@@ -832,6 +999,9 @@
       </div>
 
       <div class="tool-btn-group">
+        <button class="tool-btn ai-btn" onclick="openAiModal()" title="제미나이 AI 일정 코치">
+          ✨ AI 코치
+        </button>
         <button class="tool-btn" onclick="openSyncModal()" title="폰/아이패드/PC 연동">
           📱 폰/패드 동기화
         </button>
@@ -1644,6 +1814,72 @@
   </div>
 </div>
 
+<!-- GEMINI AI COACH MODAL -->
+<div class="modal-overlay" id="ai-modal" onclick="closeAiModalOnBg(event)">
+  <div class="modal-card ai-modal-card">
+    <div class="modal-title">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span>✨ Gemini AI 플래너 코치</span>
+        <span id="ai-model-badge" style="font-size: 0.7rem; padding: 2px 7px; background: rgba(99, 102, 241, 0.15); color: var(--primary); border-radius: 999px; font-weight: 800;">3.8 Flash</span>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="tool-btn" onclick="toggleAiSettings()" title="설정" style="padding: 4px 8px;">⚙️ 설정</button>
+        <button class="modal-close" onclick="closeAiModal()">&times;</button>
+      </div>
+    </div>
+
+    <!-- Collapsible Settings Panel (API Key & Model Selection) -->
+    <div id="ai-settings-panel" class="ai-settings-panel" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <label style="font-size: 0.78rem; font-weight: 800;">🔑 Google Gemini API Key</label>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size: 0.72rem; color: var(--primary); text-decoration: underline;">무료 발급받기 ➔</a>
+      </div>
+      <input type="password" id="gemini-api-key-input" class="sync-input" placeholder="AI Studio 키 입력 (AIzaSy...)" style="font-size: 0.82rem; padding: 7px 10px;">
+      
+      <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+        <label style="font-size: 0.78rem; font-weight: 800;">모델명:</label>
+        <input type="text" id="gemini-model-input" class="sync-input" value="gemini-3.8-flash" placeholder="gemini-3.8-flash" style="font-size: 0.8rem; padding: 4px 8px; flex: 1;">
+        <button class="btn-primary" onclick="saveAiSettings()" style="padding: 6px 12px; font-size: 0.8rem;">저장</button>
+      </div>
+      <div style="font-size: 0.7rem; color: var(--text-muted); line-height: 1.4;">
+        💡 API 키는 본인 브라우저에만 안전하게 보관됩니다. (Google AI Studio에서 무료 발급 가능)
+      </div>
+    </div>
+
+    <!-- Chat Messages Stream -->
+    <div class="ai-chat-box" id="ai-chat-box">
+      <div class="ai-msg ai">
+        👋 <strong>안녕하세요! Gemini 3.8 Flash 시험 대비 코치입니다.</strong><br>
+        공부 일정을 유동적으로 바꾸고 싶거나 추가할 내용이 있다면 무엇이든 편하게 말씀하세요!<br>
+        <div style="margin-top: 6px; font-size: 0.78rem; color: var(--text-muted);">
+          예: <em>"오늘 사문 인강 못 들었어. 내일 오후 빈 시간으로 옮겨줘"</em> 또는 <em>"내일 영어 단어 100개 외우기 추가해줘"</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Prompt Suggestions -->
+    <div class="quick-chips-wrap">
+      <span class="quick-chip" onclick="applyQuickPrompt('오늘 미완료된 공부 내일 비는 시간으로 넘겨줘')">⚡ 미완료 일정 내일로 넘기기</span>
+      <span class="quick-chip" onclick="applyQuickPrompt('내일 14시에 영어 고난도 단어 100개 외우기(1.5h) 추가해줘')">➕ 새 과제 추가하기</span>
+      <span class="quick-chip" onclick="applyQuickPrompt('오늘 밤 남은 일정들 1시간씩 뒤로 밀어줘')">⏰ 오늘 일정 1시간 밀기</span>
+      <span class="quick-chip" onclick="applyQuickPrompt('현재 체크 상태를 보고 남은 시험 대비 우선순위 조언해줘')">📊 남은 시험 전략 조언</span>
+    </div>
+
+    <!-- Input Bar -->
+    <form class="ai-input-row" onsubmit="handleAiSubmit(event)">
+      <input type="text" id="ai-user-input" class="ai-input" placeholder="AI에게 일정 조정이나 질문을 입력하세요..." autocomplete="off">
+      <button type="submit" class="ai-send-btn" id="ai-send-btn">
+        <span>전송</span> ➔
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Floating Action Button for AI Coach -->
+<div class="ai-fab-btn" onclick="openAiModal()">
+  ✨ AI 코치
+</div>
+
 <script>
   /* ==========================================================================
      CORE STATE MANAGEMENT (Single Source of Truth)
@@ -1740,10 +1976,14 @@
     // 2. Setup Event Delegation for 100% reliable click/touch handling
     setupEventHandlers();
 
+    // 2-1. Apply Dynamic/AI Tasks & Schedule Overrides
+    renderDynamicTasks();
+
     // 3. Render initial UI & D-Day
     updateAllViews();
     calculateDDay();
     initTheme();
+    initAiModule();
 
     // 4. Start Cloud Sync polling
     startCloudSync();
@@ -2216,6 +2456,330 @@
     document.addEventListener('DOMContentLoaded', initApp);
   } else {
     initApp();
+  }
+  /* ==========================================================================
+     GEMINI 3.8 FLASH AI STUDY COACH & DYNAMIC SCHEDULE CONTROLLER
+     ========================================================================== */
+  let customTasks = [];
+  let taskOverrides = {};
+
+  function initAiModule() {
+    try {
+      const savedTasks = getLocal('__custom_tasks');
+      if (savedTasks) customTasks = JSON.parse(savedTasks);
+    } catch(e) {}
+    try {
+      const savedOverrides = getLocal('__task_overrides');
+      if (savedOverrides) taskOverrides = JSON.parse(savedOverrides);
+    } catch(e) {}
+
+    const keyInput = document.getElementById('gemini-api-key-input');
+    const modelInput = document.getElementById('gemini-model-input');
+    const badge = document.getElementById('ai-model-badge');
+    const savedKey = getLocal('__gemini_api_key') || '';
+    const savedModel = getLocal('__gemini_model') || 'gemini-3.8-flash';
+
+    if (keyInput) keyInput.value = savedKey;
+    if (modelInput) modelInput.value = savedModel;
+    if (badge) badge.textContent = savedModel.replace('gemini-', '');
+
+    renderDynamicTasks();
+  }
+
+  function getGeminiApiKey() {
+    return getLocal('__gemini_api_key') || '';
+  }
+
+  function getGeminiModel() {
+    return getLocal('__gemini_model') || 'gemini-3.8-flash';
+  }
+
+  function saveAiSettings() {
+    const key = (document.getElementById('gemini-api-key-input').value || '').trim();
+    const model = (document.getElementById('gemini-model-input').value || 'gemini-3.8-flash').trim();
+    setLocal('__gemini_api_key', key);
+    setLocal('__gemini_model', model);
+    const badge = document.getElementById('ai-model-badge');
+    if (badge) badge.textContent = model.replace('gemini-', '');
+    toggleAiSettings();
+    alert('AI 설정이 저장되었습니다!');
+  }
+
+  function toggleAiSettings() {
+    const panel = document.getElementById('ai-settings-panel');
+    if (!panel) return;
+    panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+  }
+
+  function openAiModal() {
+    const modal = document.getElementById('ai-modal');
+    if (modal) modal.classList.add('open');
+    if (!getGeminiApiKey()) {
+      const panel = document.getElementById('ai-settings-panel');
+      if (panel) panel.style.display = 'flex';
+    }
+    const input = document.getElementById('ai-user-input');
+    if (input) setTimeout(() => input.focus(), 150);
+  }
+
+  function closeAiModal() {
+    const modal = document.getElementById('ai-modal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  function closeAiModalOnBg(e) {
+    if (e.target.id === 'ai-modal') closeAiModal();
+  }
+
+  function applyQuickPrompt(text) {
+    const input = document.getElementById('ai-user-input');
+    if (input) {
+      input.value = text;
+      input.focus();
+    }
+  }
+
+  function renderDynamicTasks() {
+    // 1. Register custom tasks to ALL_TASKS and inject into day cards
+    customTasks.forEach(item => {
+      if (!ALL_TASKS.includes(item.id)) {
+        ALL_TASKS.push(item.id);
+      }
+      if (item.done !== undefined && plannerState[item.id] === undefined) {
+        plannerState[item.id] = Boolean(item.done);
+      }
+
+      // Check if already in DOM
+      let el = document.getElementById('custom-task-' + item.id);
+      if (!el) {
+        const dayCard = document.querySelector(`.day-card[data-day="${item.day}"] .task-list`);
+        if (dayCard) {
+          el = document.createElement('label');
+          el.id = 'custom-task-' + item.id;
+          el.className = 'task-item has-cb';
+          el.setAttribute('data-task-row', item.id);
+          el.innerHTML = `
+            <input type="checkbox" data-task="${item.id}" data-day-task="${item.day}">
+            <span class="time-slot">${item.time || '자율'}</span>
+            <div class="task-content">
+              <div class="task-title"><span class="tag tag-${item.subject || 'cal1'}">AI 과제</span>${item.title}</div>
+              <div class="task-desc">${item.desc || 'AI 코치 맞춤형 등록 일정'}</div>
+            </div>
+          `;
+          dayCard.appendChild(el);
+        }
+      }
+    });
+
+    // 2. Handle Task Overrides (Moving tasks to other days or updating time)
+    Object.keys(taskOverrides).forEach(taskId => {
+      const info = taskOverrides[taskId];
+      const el = document.querySelector(`[data-task-row="${taskId}"]`);
+      if (el && info.toDay) {
+        const targetList = document.querySelector(`.day-card[data-day="${info.toDay}"] .task-list`);
+        if (targetList && el.parentElement !== targetList) {
+          targetList.appendChild(el);
+          const cb = el.querySelector('input[type="checkbox"]');
+          if (cb) cb.setAttribute('data-day-task', info.toDay);
+        }
+      }
+      if (el && info.time) {
+        const slot = el.querySelector('.time-slot');
+        if (slot) slot.textContent = info.time;
+      }
+    });
+  }
+
+  function shiftDayTimes(dayCode, minutes) {
+    const list = document.querySelectorAll(`.day-card[data-day="${dayCode}"] .time-slot`);
+    list.forEach(slot => {
+      const orig = slot.textContent;
+      slot.textContent = orig.replace(/(\d{1,2}):(\d{2})/g, (m, h, min) => {
+        let total = parseInt(h, 10) * 60 + parseInt(min, 10) + minutes;
+        if (total < 0) total += 24 * 60;
+        total = total % (24 * 60);
+        return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
+      });
+    });
+  }
+
+  function getCurrentScheduleSummary() {
+    const summary = {};
+    Object.keys(DAILY_TASKS).forEach(day => {
+      summary[day] = [];
+      const card = document.querySelector(`.day-card[data-day="${day}"]`);
+      if (card) {
+        card.querySelectorAll('.task-item').forEach(row => {
+          const cb = row.querySelector('input[type="checkbox"]');
+          const time = row.querySelector('.time-slot')?.textContent || '';
+          const title = row.querySelector('.task-title')?.textContent || '';
+          const taskId = cb ? cb.getAttribute('data-task') : null;
+          const isDone = taskId ? Boolean(plannerState[taskId]) : false;
+          summary[day].push({ taskId, time, title, isDone });
+        });
+      }
+    });
+    return summary;
+  }
+
+  async function callGeminiApi(promptText) {
+    const apiKey = getGeminiApiKey();
+    if (!apiKey) {
+      throw new Error('API_KEY_REQUIRED');
+    }
+    const modelName = getGeminiModel();
+
+    const systemInstruction = `당신은 대한민국 고등학교 중간고사 수험생을 위한 초정밀 1:1 맞춤형 AI 스터디 플래너 코치입니다.
+현재 시험 플래너에 등록된 일정과 학생의 체크 상태를 바탕으로 학생의 요구를 해결하세요.
+오늘 날짜: 2026-09-25
+등록된 과목 코드:
+- cal1: 미적분 Ⅰ (9/29 시험)
+- kor: 화법과 언어 (9/30 시험)
+- soc: 사회문화 (9/30 시험)
+- eng: 영어 Ⅱ (10/1 시험)
+- cal2: 미적분 Ⅱ (10/2 시험)
+
+등록된 일자 코드: 0924 (9/24 목), 0925 (9/25 금), 0926 (9/26 토), 0927 (9/27 일), 0928 (9/28 월), 0929 (9/29 화), 0930 (9/30 수), 1001 (10/1 목).
+
+사용자가 일정 변경/추가/이동/시간 밀기를 요구하면 반드시 아래 JSON 형식으로만 응답해야 합니다. (마크다운 백틱 \`\`\`json ... \`\`\` 가능)
+{
+  "reply": "학생에게 해줄 친절하고 격려하는 한국어 설명과 조언",
+  "actions": [
+    // 필요 시 아래 형식의 액션을 포함:
+    // 1. 일정 이동 (기존 과제를 다른 날짜/시간으로 이동):
+    // { "type": "move_task", "taskId": "c1_1", "toDay": "0925", "time": "14:00 ~ 16:00" }
+    // 2. 새 과제 추가:
+    // { "type": "add_task", "day": "0925", "subject": "eng", "time": "14:00 ~ 15:30", "title": "영어 단어 100개", "desc": "집중 암기" }
+    // 3. 당일 일정 시간 밀기/당기기:
+    // { "type": "shift_day", "day": "0924", "minutes": 60 }
+  ]
+}
+단순 질문이나 학습 전략 조언일 경우 "actions": [] 빈 배열로 응답하세요.`;
+
+    const payload = {
+      contents: [
+        {
+          parts: [
+            { text: systemInstruction + "\n\n현재 전체 일정 및 체크 상태:\n" + JSON.stringify(getCurrentScheduleSummary()) + "\n\n학생의 요청:\n" + promptText }
+          ]
+        }
+      ]
+    };
+
+    const modelsToTry = [modelName];
+    if (modelName !== 'gemini-2.0-flash') modelsToTry.push('gemini-2.0-flash');
+    if (modelName !== 'gemini-1.5-flash') modelsToTry.push('gemini-1.5-flash');
+
+    let lastError = null;
+    for (const model of modelsToTry) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const candidate = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (candidate) return { text: candidate, modelUsed: model };
+        } else {
+          const errJson = await res.json().catch(() => ({}));
+          lastError = new Error(errJson?.error?.message || `HTTP ${res.status}`);
+        }
+      } catch(err) {
+        lastError = err;
+      }
+    }
+    throw lastError;
+  }
+
+  function appendChatMessage(role, contentHtml) {
+    const box = document.getElementById('ai-chat-box');
+    if (!box) return;
+    const msg = document.createElement('div');
+    msg.className = `ai-msg ${role}`;
+    msg.innerHTML = contentHtml;
+    box.appendChild(msg);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  async function handleAiSubmit(e) {
+    e.preventDefault();
+    const input = document.getElementById('ai-user-input');
+    const btn = document.getElementById('ai-send-btn');
+    const text = (input.value || '').trim();
+    if (!text) return;
+
+    input.value = '';
+    appendChatMessage('user', text);
+
+    btn.disabled = true;
+    btn.innerHTML = '<span>생각 중...</span> ⏳';
+
+    try {
+      const response = await callGeminiApi(text);
+      let replyText = response.text;
+      let actions = [];
+
+      // Extract JSON from response
+      const jsonMatch = replyText.match(/```json([\s\S]*?)```/) || replyText.match(/(\{[\s\S]*\})/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[1]);
+          replyText = parsed.reply || replyText;
+          actions = parsed.actions || [];
+        } catch(e) {}
+      }
+
+      let actionsSummary = '';
+      if (actions.length > 0) {
+        actions.forEach(act => {
+          if (act.type === 'move_task') {
+            taskOverrides[act.taskId] = { toDay: act.toDay, time: act.time };
+            actionsSummary += `<div class="ai-action-badge">✅ 과제 [${act.taskId}] ${act.toDay} 일자로 이동됨 (${act.time || '시간 조정'})</div>`;
+          } else if (act.type === 'add_task') {
+            const newId = 'cust_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+            customTasks.push({
+              id: newId,
+              day: act.day || '0925',
+              subject: act.subject || 'cal1',
+              time: act.time || '14:00 ~ 15:30',
+              title: act.title,
+              desc: act.desc || 'AI 추천 맞춤 과제',
+              done: false
+            });
+            actionsSummary += `<div class="ai-action-badge">➕ [${act.title}] ${act.day} 일자에 추가됨</div>`;
+          } else if (act.type === 'shift_day') {
+            shiftDayTimes(act.day, act.minutes || 60);
+            actionsSummary += `<div class="ai-action-badge">⏰ ${act.day} 일정 ${act.minutes}분 순연 완료</div>`;
+          }
+        });
+
+        setLocal('__custom_tasks', JSON.stringify(customTasks));
+        setLocal('__task_overrides', JSON.stringify(taskOverrides));
+        renderDynamicTasks();
+        updateAllViews();
+        triggerCloudSyncDebounced();
+
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } });
+        }
+      }
+
+      appendChatMessage('ai', `<div>${replyText.replace(/\n/g, '<br>')}</div>${actionsSummary}`);
+
+    } catch(err) {
+      if (err.message === 'API_KEY_REQUIRED') {
+        appendChatMessage('ai', `⚠️ <strong>Google Gemini API Key가 필요합니다!</strong><br>상단 <strong>[⚙️ 설정]</strong>을 눌러 무료 API Key를 입력해주세요.<br><a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--primary); text-decoration:underline;">여기서 1분 만에 무료 발급받기 ➔</a>`);
+        toggleAiSettings();
+      } else {
+        appendChatMessage('ai', `❌ <strong>오류가 발생했습니다:</strong> ${err.message}<br>API 키나 모델명을 확인해 주세요.`);
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span>전송</span> ➔';
+    }
   }
 </script>
 
